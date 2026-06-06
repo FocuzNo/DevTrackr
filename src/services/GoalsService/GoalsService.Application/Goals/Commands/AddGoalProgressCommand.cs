@@ -1,3 +1,5 @@
+using DevTrackr.Cqrs.Abstractions;
+
 namespace GoalsService.Application.Goals.Commands;
 
-public sealed record AddGoalProgressCommand(Guid UserId, Guid GoalId, int MinutesToAdd);
+public sealed record AddGoalProgressCommand(Guid UserId, Guid GoalId, int MinutesToAdd) : ICommand;

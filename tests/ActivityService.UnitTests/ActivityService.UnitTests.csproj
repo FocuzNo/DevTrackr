@@ -15,4 +15,10 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\building-blocks\DevTrackr.Contracts\DevTrackr.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\services\ActivityService\ActivityService.Application\ActivityService.Application.csproj" />
+    <ProjectReference Include="..\..\src\services\ActivityService\ActivityService.Domain\ActivityService.Domain.csproj" />
+  </ItemGroup>
+
 </Project>

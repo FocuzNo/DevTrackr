@@ -6,9 +6,11 @@
 
   <ItemGroup>
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <PackageReference Include="MassTransit" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\building-blocks\DevTrackr.Contracts\DevTrackr.Contracts.csproj" />
     <ProjectReference Include="..\ActivityService.Domain\ActivityService.Domain.csproj" />
     <ProjectReference Include="..\..\..\building-blocks\DevTrackr.SharedKernel\DevTrackr.SharedKernel.csproj" />
   </ItemGroup>

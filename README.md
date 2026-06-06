@@ -6,6 +6,7 @@ DevTrackr is a small but professional .NET microservices backend for tracking a 
 
 - Clean Architecture inside each microservice
 - DDD-style domain boundaries and shared kernel primitives
+- CQRS with a custom in-process mediator and FluentValidation pipeline
 - Event-driven communication with RabbitMQ and MassTransit
 - Transactional outbox preparation for event-producing services
 - PostgreSQL database-per-service setup
@@ -19,7 +20,7 @@ DevTrackr is a small but professional .NET microservices backend for tracking a 
 2. `GoalsService`
    - learning goals, goal progress, goal completion
 3. `ActivityService`
-   - study session logging and querying
+   - study session logging, querying, and event publishing
 4. `StatisticsService`
    - read models, dashboard stats, streaks, cache-backed statistics
 
@@ -73,6 +74,7 @@ Shared projects keep cross-service coupling disciplined:
 - `DevTrackr.SharedKernel`: `Entity`, `AggregateRoot`, `ValueObject`, `DomainEvent`, `Result`, `Error`
 - `DevTrackr.Contracts`: immutable integration events
 - `DevTrackr.Messaging`: shared RabbitMQ and MassTransit bootstrap
+- `DevTrackr.Cqrs`: commands, queries, handlers, mediator, and validation pipeline
 
 ## Event-driven communication
 
@@ -88,12 +90,13 @@ Planned flow:
 2. `GoalsService` consumes that event, applies progress idempotently, and publishes progress/completion events through its outbox.
 3. `StatisticsService` consumes all integration events, updates statistics read models, and invalidates Redis dashboard cache.
 
-RabbitMQ is the broker, MassTransit is the bus, and Redis is used only for cached dashboard/statistics data.
+RabbitMQ is the broker, MassTransit is the bus, the custom mediator is used only for in-process request dispatch, and Redis is used only for cached dashboard/statistics data.
 
 ## Technology stack
 
 - .NET 10
 - ASP.NET Core Web API
+- FastEndpoints
 - Scalar
 - PostgreSQL
 - Redis
@@ -111,6 +114,7 @@ RabbitMQ is the broker, MassTransit is the bus, and Redis is used only for cache
 - Project references that preserve service boundaries
 - Shared kernel primitives
 - Immutable integration event contracts
+- Shared CQRS abstractions and lightweight mediator pipeline
 - Shared MassTransit + RabbitMQ registration with:
   - kebab-case endpoint naming
   - retry policy
@@ -127,9 +131,44 @@ RabbitMQ is the broker, MassTransit is the bus, and Redis is used only for cache
 
 This is intentionally a scaffold, not the finished product. Business logic and cross-service behavior are still lightweight on purpose, but the infrastructure path now assumes EF Core migrations are responsible for creating and updating service databases.
 
+## CQRS and custom mediator
+
+DevTrackr uses CQRS for application use cases, but deliberately does not use the `MediatR` NuGet package or any external mediator library.
+
+Instead, the solution has a small shared building block:
+
+- `DevTrackr.Cqrs`
+
+It contains:
+
+- `ICommand`
+- `ICommand<TResult>`
+- `IQuery<TResult>`
+- `ICommandHandler<TCommand>`
+- `ICommandHandler<TCommand, TResult>`
+- `IQueryHandler<TQuery, TResult>`
+- `IAppMediator`
+- `IPipelineBehavior<TRequest, TResult>`
+- `ValidationBehavior<TRequest, TResult>`
+
+Current request flow:
+
+`FastEndpoints -> IAppMediator -> ValidationBehavior -> Command/Query Handler -> Domain + Infrastructure`
+
+Why this approach:
+
+- keeps the project small and understandable
+- keeps CQRS explicit
+- avoids an extra external mediator dependency
+- still gives us pipeline behaviors and FluentValidation
+
+MassTransit remains the cross-service messaging mechanism. The custom mediator is only for in-process request handling.
+
 ## GoalsService
 
 `GoalsService` is the first fully implemented microservice in the solution.
+
+GoalsService now uses FastEndpoints for its HTTP surface and the shared custom mediator for all command/query dispatch.
 
 ### Endpoints
 
@@ -164,8 +203,9 @@ This is intentionally a scaffold, not the finished product. Business logic and c
 
 1. `ActivityService` will publish `StudySessionLoggedIntegrationEvent`.
 2. `GoalsService` consumes the event, checks whether the event was already processed, and skips duplicates safely.
-3. If the goal exists and can accept progress, `GoalsService` adds `DurationMinutes` to the goal.
-4. `GoalsService` publishes `GoalProgressUpdatedIntegrationEvent` through the EF Core outbox.
+3. The MassTransit consumer sends `AddGoalProgressCommand` through `IAppMediator`.
+4. The validation pipeline runs before `AddGoalProgressCommandHandler` mutates the aggregate.
+5. `GoalsService` publishes `GoalProgressUpdatedIntegrationEvent` through the EF Core outbox.
 5. When a user completes a goal explicitly, `GoalsService` publishes `GoalCompletedIntegrationEvent`.
 
 ### Current user handling
@@ -174,6 +214,48 @@ GoalsService reads the current user id from JWT claims when available. During lo
 
 - `CurrentUser:DevelopmentUserId`
 - `GOALS_DEVELOPMENT_USER_ID` in Docker Compose
+
+## ActivityService
+
+`ActivityService` is the second fully implemented microservice in the solution.
+
+### Endpoints
+
+- `POST /api/study-sessions`
+- `GET /api/study-sessions`
+- `GET /api/study-sessions/{id}`
+- `GET /api/study-sessions/by-goal/{goalId}`
+- `GET /api/study-sessions/by-date-range?from=yyyy-MM-dd&to=yyyy-MM-dd`
+- `GET /health`
+- `GET /scalar/v1`
+- `GET /api/system/ping`
+
+### ActivityService domain rules
+
+- topic is required
+- topic max length is 100 characters
+- note max length is 1000 characters
+- duration must be greater than zero
+- duration cannot be more than 480 minutes
+- difficulty must be between 1 and 5
+- session date cannot be in the future
+- goal id is required
+- user id is required
+
+### ActivityService event flow
+
+1. `POST /api/study-sessions` creates a `StudySession` aggregate.
+2. `ActivityService` persists the aggregate to PostgreSQL.
+3. `ActivityService` publishes `StudySessionLoggedIntegrationEvent` through MassTransit using the EF Core outbox.
+4. `GoalsService` consumes the event and adds `DurationMinutes` to the matching goal.
+5. `GoalsService` then publishes `GoalProgressUpdatedIntegrationEvent` when progress changes.
+
+### Current user handling
+
+ActivityService reads the current user id from JWT claims when available. During local development, it supports the same development-only fallback user id pattern as GoalsService:
+
+- `CurrentUser:DevelopmentUserId`
+- `CurrentUser__DevelopmentUserId` in Docker Compose
 
 ## How to run locally
 
@@ -293,7 +375,7 @@ You can replace `goals-service-api` with:
 docker compose up --build
 ```
 
-At this stage, `GoalsService` is the fully wired microservice. `IdentityService`, `ActivityService`, and `StatisticsService` are startup-ready API stubs so the full solution can boot cleanly in Docker while their business and infrastructure logic is still being built out.
+At this stage, `GoalsService` and `ActivityService` are fully wired microservices. `IdentityService` and `StatisticsService` are still startup-ready API stubs so the full solution can boot cleanly in Docker while their business and infrastructure logic is still being built out.
 
 ### Stop services
 
@@ -358,6 +440,22 @@ dotnet ef migrations add InitialCreate --project src/services/GoalsService/Goals
 
 You can also replace `InitialCreate` with any later migration name you want.
 
+## ActivityService migrations
+
+In local and Docker development environments, ActivityService applies EF Core migrations automatically on startup. You can also manage the schema manually when needed.
+
+Apply the ActivityService database migration manually with:
+
+```bash
+dotnet ef database update --project src/services/ActivityService/ActivityService.Infrastructure --startup-project src/services/ActivityService/ActivityService.Api
+```
+
+Create a new ActivityService migration later with:
+
+```bash
+dotnet ef migrations add InitialCreate --project src/services/ActivityService/ActivityService.Infrastructure --startup-project src/services/ActivityService/ActivityService.Api
+```
+
 ## Database setup notes
 
 Docker Compose runs a single PostgreSQL container. The application does not use SQL init scripts for schema creation.
@@ -374,6 +472,7 @@ Each service only points to its own database. No tables are shared across servic
 ## Troubleshooting
 
 - If MassTransit outbox tables are missing in `GoalsService`, run the EF Core migrations again or recreate local Docker volumes with `docker compose down -v`.
+- If MassTransit outbox tables are missing in `ActivityService`, run the EF Core migrations again or recreate local Docker volumes with `docker compose down -v`.
 - If Docker build fails with `rpc error: code = Unavailable desc = error reading from server: EOF`, try:
 
 ```powershell
@@ -396,18 +495,18 @@ wsl --shutdown
 
 ## Next implementation steps
 
-1. Implement `ActivityService` persistence and actual publishing of `StudySessionLoggedIntegrationEvent`.
-2. Implement `IdentityService` registration/login and real JWT issuance.
-3. Build `StatisticsService` projections for dashboard, weekly progress, topic stats, and streaks.
-4. Add integration tests around GoalsService persistence, outbox behavior, and event consumption.
-5. Expand migration coverage and add CI verification for schema drift.
+1. Implement `IdentityService` registration/login and real JWT issuance.
+2. Build `StatisticsService` projections for dashboard, weekly progress, topic stats, and streaks.
+3. Add integration tests around ActivityService and GoalsService persistence, outbox behavior, and event consumption.
+4. Add authentication/authorization coverage across the APIs instead of relying on development user fallbacks.
+5. Expand CI verification for migrations, Docker startup, and cross-service event flow.
 
 ## Roadmap
 
 - [x] EF Core migrations per service
 - [ ] Real registration/login flow
 - [ ] Goal lifecycle and progress updates
-- [ ] Study session persistence and outbox publishing
+- [x] Study session persistence and outbox publishing
 - [ ] Statistics projections and dashboard endpoints
 - [ ] Cache invalidation and dashboard optimization
 - [ ] Better authentication/authorization coverage
@@ -417,3 +516,40 @@ wsl --shutdown
 ## Notes
 
 This repository was designed to stay understandable. The code favors explicit structure over clever abstractions, and the business logic is intentionally unfinished so the next iterations can be implemented clearly in public commits.
+
+## End-to-end check: Goals + Activity
+
+Once Docker is running, you can verify the current event-driven flow with this sequence:
+
+1. Start the full stack:
+
+```bash
+docker compose up --build
+```
+
+2. Create a goal in GoalsService using Scalar:
+   - [http://localhost:5102/scalar/v1](http://localhost:5102/scalar/v1)
+   - for `category`, use the enum value currently shown by Scalar
+
+3. Log a study session in ActivityService using Scalar:
+   - [http://localhost:5103/scalar/v1](http://localhost:5103/scalar/v1)
+   - sample request:
+
+```json
+{
+  "goalId": "PUT-GOAL-ID-HERE",
+  "topic": "MassTransit EF outbox wiring",
+  "durationMinutes": 75,
+  "difficulty": "Hard",
+  "note": "Verified publish + consume path.",
+  "sessionDate": "2026-06-06"
+}
+```
+
+4. Fetch the goal again from GoalsService and confirm `currentMinutes` increased.
+
+5. If you want to see the event flow in logs:
+
+```bash
+docker compose logs --tail=150 activity-service-api goals-service-api
+```
