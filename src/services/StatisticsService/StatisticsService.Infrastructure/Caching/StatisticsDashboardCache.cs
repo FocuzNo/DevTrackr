@@ -1,13 +1,14 @@
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
-using StatisticsService.Application.Dashboard;
+using StatisticsService.Application.Abstractions.Caching;
+using StatisticsService.Application.Statistics.Responses;
 using System.Text.Json;
 
 namespace StatisticsService.Infrastructure.Caching;
 
 public sealed class StatisticsDashboardCache(
     IDistributedCache cache,
-    IOptions<StatisticsCacheOptions> options) : IStatisticsDashboardCache
+    IOptions<StatisticsCacheOptions> options) : IDashboardCache
 {
     public async Task<DashboardResponse?> GetAsync(Guid userId, CancellationToken cancellationToken = default)
     {
@@ -15,12 +16,12 @@ public sealed class StatisticsDashboardCache(
         return payload is null ? null : JsonSerializer.Deserialize<DashboardResponse>(payload);
     }
 
-    public Task SetAsync(DashboardResponse dashboard, CancellationToken cancellationToken = default)
+    public Task SetAsync(Guid userId, DashboardResponse dashboard, CancellationToken cancellationToken = default)
     {
         var payload = JsonSerializer.Serialize(dashboard);
 
         return cache.SetStringAsync(
-            GetKey(dashboard.UserId),
+            GetKey(userId),
             payload,
             new DistributedCacheEntryOptions
             {
@@ -32,5 +33,5 @@ public sealed class StatisticsDashboardCache(
     public Task InvalidateAsync(Guid userId, CancellationToken cancellationToken = default) =>
         cache.RemoveAsync(GetKey(userId), cancellationToken);
 
-    private static string GetKey(Guid userId) => $"statistics:dashboard:{userId}";
+    private static string GetKey(Guid userId) => $"devtrackr:statistics:dashboard:{userId}";
 }

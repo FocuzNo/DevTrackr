@@ -13,7 +13,8 @@ public static class MessagingRegistrationExtensions
         IConfiguration configuration,
         Action<IBusRegistrationConfigurator>? configureConsumers = null,
         Action<IBusRegistrationContext, IRabbitMqBusFactoryConfigurator>? configureBus = null,
-        bool useEntityFrameworkOutbox = false)
+        bool useEntityFrameworkOutbox = false,
+        string? endpointNamePrefix = null)
         where TDbContext : DbContext
     {
         var rabbitMqOptions = configuration
@@ -45,7 +46,10 @@ public static class MessagingRegistrationExtensions
                 });
             }
 
-            x.SetKebabCaseEndpointNameFormatter();
+            x.SetEndpointNameFormatter(
+                string.IsNullOrWhiteSpace(endpointNamePrefix)
+                    ? KebabCaseEndpointNameFormatter.Instance
+                    : new KebabCaseEndpointNameFormatter(endpointNamePrefix.Trim(), false));
 
             x.UsingRabbitMq((context, cfg) =>
             {

@@ -1,6 +1,11 @@
+using FastEndpoints;
 using Scalar.AspNetCore;
 using Serilog;
-using StatisticsService.Application.Dashboard;
+using StatisticsService.Api.Auth;
+using StatisticsService.Api.Extensions;
+using StatisticsService.Application;
+using StatisticsService.Infrastructure;
+using StatisticsService.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,9 +16,19 @@ builder.Host.UseSerilog((context, services, configuration) =>
         .WriteTo.Console());
 
 builder.Services.AddOpenApi();
-builder.Services.AddHealthChecks();
+builder.Services.AddFastEndpoints();
+builder.Services.AddApplication();
+builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.Configure<CurrentUserOptions>(builder.Configuration.GetSection(CurrentUserOptions.SectionName));
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserProvider, CurrentUserProvider>();
 
 var app = builder.Build();
+
+if (app.Environment.ShouldApplyMigrations())
+{
+    await app.ApplyMigrationsAsync<StatisticsDbContext>();
+}
 
 app.MapOpenApi();
 app.MapScalarApiReference("/scalar/v1", options => options.WithTitle("StatisticsService API"));
@@ -24,27 +39,6 @@ app.MapGet("/api/system/ping", () => Results.Ok(new
     Status = "Running",
     UtcNow = DateTime.UtcNow
 }));
-
-var api = app.MapGroup("/api/statistics").WithTags("Statistics");
-
-api.MapGet("/test", () => Results.Ok(new
-{
-    Service = "StatisticsService",
-    Status = "Running",
-    UtcNow = DateTime.UtcNow
-}));
-
-api.MapGet("/dashboard/{userId:guid}", (Guid userId) =>
-{
-    var response = new DashboardResponse(
-        userId,
-        TotalSessions: 0,
-        TotalMinutes: 0,
-        CompletedGoals: 0,
-        CurrentStreakDays: 0,
-        TopTopics: Array.Empty<string>());
-
-    return Results.Ok(response);
-});
+app.UseFastEndpoints();
 
 app.Run();

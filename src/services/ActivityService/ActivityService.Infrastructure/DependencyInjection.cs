@@ -30,7 +30,8 @@ public static class DependencyInjection
 
         services.AddDevTrackrMassTransit<ActivityDbContext>(
             configuration,
-            useEntityFrameworkOutbox: true);
+            useEntityFrameworkOutbox: true,
+            endpointNamePrefix: "activity");
 
         return services;
     }

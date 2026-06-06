@@ -15,4 +15,10 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\services\StatisticsService\StatisticsService.Application\StatisticsService.Application.csproj" />
+    <ProjectReference Include="..\..\src\services\StatisticsService\StatisticsService.Domain\StatisticsService.Domain.csproj" />
+    <ProjectReference Include="..\..\src\services\StatisticsService\StatisticsService.Infrastructure\StatisticsService.Infrastructure.csproj" />
+  </ItemGroup>
+
 </Project>
