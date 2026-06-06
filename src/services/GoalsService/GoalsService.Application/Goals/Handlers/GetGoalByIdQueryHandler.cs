@@ -1,5 +1,5 @@
+using DevTrackr.Cqrs.Abstractions;
 using DevTrackr.SharedKernel.Primitives;
-using GoalsService.Application.Abstractions;
 using GoalsService.Application.Abstractions.Persistence;
 using GoalsService.Application.Goals.Queries;
 using GoalsService.Application.Goals.Responses;

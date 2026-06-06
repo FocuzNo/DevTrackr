@@ -1,8 +1,10 @@
+using DevTrackr.Cqrs.Abstractions;
 using DevTrackr.Contracts;
 using GoalsService.Application.Abstractions.Persistence;
+using GoalsService.Application.Goals.Commands;
 using GoalsService.Domain.Goals;
 using GoalsService.Infrastructure.Messaging;
-using MassTransit;
+using DevTrackr.SharedKernel.Primitives;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
@@ -23,14 +25,12 @@ public sealed class StudySessionLoggedIntegrationEventProcessorTests
             new DateOnly(2026, 6, 30),
             DateTime.UtcNow).Value!;
 
-        var goalRepository = new InMemoryGoalRepository(goal);
         var processedRepository = new InMemoryProcessedIntegrationEventRepository();
-        var publishEndpoint = new TestPublishEndpoint();
+        var mediator = new TestMediator(goal);
         var processor = new StudySessionLoggedIntegrationEventProcessor(
-            goalRepository,
+            mediator,
             processedRepository,
             new TestUnitOfWork(),
-            publishEndpoint,
             new TestLogger<StudySessionLoggedIntegrationEventProcessor>());
 
         await processor.ProcessAsync(new StudySessionLoggedIntegrationEvent(
@@ -40,11 +40,12 @@ public sealed class StudySessionLoggedIntegrationEventProcessorTests
             GoalId: goal.Id,
             Topic: "Queues",
             DurationMinutes: 90,
+            Difficulty: 3,
             SessionDate: new DateOnly(2026, 6, 5),
-            OccurredOnUtc: DateTime.UtcNow));
+            OccurredAt: DateTime.UtcNow));
 
         Assert.Equal(90, goal.CurrentMinutes);
-        Assert.Single(publishEndpoint.PublishedMessages.OfType<GoalProgressUpdatedIntegrationEvent>());
+        Assert.Equal(1, mediator.SendCallCount);
     }
 
     [Fact]
@@ -61,14 +62,12 @@ public sealed class StudySessionLoggedIntegrationEventProcessorTests
             DateTime.UtcNow).Value!;
 
         var eventId = Guid.NewGuid();
-        var goalRepository = new InMemoryGoalRepository(goal);
         var processedRepository = new InMemoryProcessedIntegrationEventRepository(eventId);
-        var publishEndpoint = new TestPublishEndpoint();
+        var mediator = new TestMediator(goal);
         var processor = new StudySessionLoggedIntegrationEventProcessor(
-            goalRepository,
+            mediator,
             processedRepository,
             new TestUnitOfWork(),
-            publishEndpoint,
             new TestLogger<StudySessionLoggedIntegrationEventProcessor>());
 
         await processor.ProcessAsync(new StudySessionLoggedIntegrationEvent(
@@ -78,28 +77,12 @@ public sealed class StudySessionLoggedIntegrationEventProcessorTests
             GoalId: goal.Id,
             Topic: "Queues",
             DurationMinutes: 90,
+            Difficulty: 3,
             SessionDate: new DateOnly(2026, 6, 5),
-            OccurredOnUtc: DateTime.UtcNow));
+            OccurredAt: DateTime.UtcNow));
 
         Assert.Equal(0, goal.CurrentMinutes);
-        Assert.Empty(publishEndpoint.PublishedMessages);
-    }
-
-    private sealed class InMemoryGoalRepository(params Goal[] goals) : IGoalRepository
-    {
-        private readonly List<Goal> _goals = goals.ToList();
-
-        public Task AddAsync(Goal goal, CancellationToken cancellationToken = default)
-        {
-            _goals.Add(goal);
-            return Task.CompletedTask;
-        }
-
-        public Task<Goal?> GetByIdAsync(Guid goalId, Guid userId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(_goals.FirstOrDefault(x => x.Id == goalId && x.UserId == userId));
-
-        public Task<IReadOnlyList<Goal>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<Goal>>(_goals.Where(x => x.UserId == userId).ToArray());
+        Assert.Equal(0, mediator.SendCallCount);
     }
 
     private sealed class InMemoryProcessedIntegrationEventRepository(params Guid[] processedEventIds)
@@ -128,52 +111,27 @@ public sealed class StudySessionLoggedIntegrationEventProcessorTests
         }
     }
 
-    private sealed class TestPublishEndpoint : IPublishEndpoint
+    private sealed class TestMediator(Goal goal) : IAppMediator
     {
-        public List<object> PublishedMessages { get; } = [];
+        public int SendCallCount { get; private set; }
 
-        public ConnectHandle ConnectPublishObserver(IPublishObserver observer) => throw new NotSupportedException();
-
-        public Task Publish<T>(T message, CancellationToken cancellationToken = default)
-            where T : class
+        public Task<Result> SendAsync(ICommand command, CancellationToken cancellationToken = default)
         {
-            PublishedMessages.Add(message);
-            return Task.CompletedTask;
+            SendCallCount++;
+
+            if (command is AddGoalProgressCommand addGoalProgressCommand)
+            {
+                return Task.FromResult(goal.AddProgress(addGoalProgressCommand.MinutesToAdd, DateTime.UtcNow));
+            }
+
+            throw new NotSupportedException($"Unsupported command type: {command.GetType().Name}");
         }
 
-        public Task Publish<T>(T message, IPipe<PublishContext<T>> publishPipe, CancellationToken cancellationToken = default)
-            where T : class => Publish(message, cancellationToken);
+        public Task<TResult> SendAsync<TResult>(ICommand<TResult> command, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
 
-        public Task Publish<T>(T message, IPipe<PublishContext> publishPipe, CancellationToken cancellationToken = default)
-            where T : class => Publish(message, cancellationToken);
-
-        public Task Publish(object message, CancellationToken cancellationToken = default)
-        {
-            PublishedMessages.Add(message);
-            return Task.CompletedTask;
-        }
-
-        public Task Publish(object message, Type messageType, CancellationToken cancellationToken = default) =>
-            Publish(message, cancellationToken);
-
-        public Task Publish(object message, IPipe<PublishContext> publishPipe, CancellationToken cancellationToken = default) =>
-            Publish(message, cancellationToken);
-
-        public Task Publish(object message, Type messageType, IPipe<PublishContext> publishPipe, CancellationToken cancellationToken = default) =>
-            Publish(message, cancellationToken);
-
-        public Task Publish<T>(object values, CancellationToken cancellationToken = default)
-            where T : class
-        {
-            PublishedMessages.Add(values);
-            return Task.CompletedTask;
-        }
-
-        public Task Publish<T>(object values, IPipe<PublishContext<T>> publishPipe, CancellationToken cancellationToken = default)
-            where T : class => Publish<T>(values, cancellationToken);
-
-        public Task Publish<T>(object values, IPipe<PublishContext> publishPipe, CancellationToken cancellationToken = default)
-            where T : class => Publish<T>(values, cancellationToken);
+        public Task<TResult> SendAsync<TResult>(IQuery<TResult> query, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
     }
 
     private sealed class TestLogger<T> : ILogger<T>

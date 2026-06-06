@@ -1,4 +1,7 @@
+using ActivityService.Application.Abstractions.Persistence;
+using ActivityService.Infrastructure.HealthChecks;
 using ActivityService.Infrastructure.Persistence;
+using ActivityService.Infrastructure.Persistence.Repositories;
 using DevTrackr.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -17,7 +20,13 @@ public static class DependencyInjection
             options.UseNpgsql(
                 connectionString,
                 x => x.MigrationsAssembly(typeof(ActivityDbContext).Assembly.FullName)));
-        services.AddHealthChecks();
+
+        services.AddScoped<IStudySessionRepository, StudySessionRepository>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+        services.AddHealthChecks()
+            .AddCheck<ActivityDbContextHealthCheck>("postgresql")
+            .AddCheck<RabbitMqOptionsHealthCheck>("rabbitmq");
 
         services.AddDevTrackrMassTransit<ActivityDbContext>(
             configuration,

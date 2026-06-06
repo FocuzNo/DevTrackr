@@ -1,7 +1,7 @@
 using DevTrackr.SharedKernel.Primitives;
 using FluentValidation.Results;
 
-namespace GoalsService.Application.Common;
+namespace ActivityService.Application.Common;
 
 internal static class ValidationResultExtensions
 {

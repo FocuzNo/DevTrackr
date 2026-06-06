@@ -7,5 +7,6 @@ public sealed record StudySessionLoggedIntegrationEvent(
     Guid GoalId,
     string Topic,
     int DurationMinutes,
+    int Difficulty,
     DateOnly SessionDate,
-    DateTime OccurredOnUtc);
+    DateTime OccurredAt);

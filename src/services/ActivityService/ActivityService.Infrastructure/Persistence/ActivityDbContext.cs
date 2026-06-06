@@ -10,11 +10,9 @@ public sealed class ActivityDbContext(DbContextOptions<ActivityDbContext> option
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<StudySession>(builder =>
-        {
-            builder.HasKey(x => x.Id);
-            builder.Property(x => x.Topic).HasMaxLength(150);
-        });
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(ActivityDbContext).Assembly);
 
         modelBuilder.AddInboxStateEntity();
         modelBuilder.AddOutboxMessageEntity();
