@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>GoalsService.Application</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <PackageReference Include="MassTransit.RabbitMQ" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\building-blocks\DevTrackr.Contracts\DevTrackr.Contracts.csproj" />
+    <ProjectReference Include="..\GoalsService.Domain\GoalsService.Domain.csproj" />
+    <ProjectReference Include="..\..\..\building-blocks\DevTrackr.SharedKernel\DevTrackr.SharedKernel.csproj" />
+  </ItemGroup>
+
+</Project>

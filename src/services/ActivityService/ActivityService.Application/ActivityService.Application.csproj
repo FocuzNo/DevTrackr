@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>ActivityService.Application</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ActivityService.Domain\ActivityService.Domain.csproj" />
+    <ProjectReference Include="..\..\..\building-blocks\DevTrackr.SharedKernel\DevTrackr.SharedKernel.csproj" />
+  </ItemGroup>
+
+</Project>

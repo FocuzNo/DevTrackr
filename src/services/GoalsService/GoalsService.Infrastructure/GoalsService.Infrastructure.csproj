@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>GoalsService.Infrastructure</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MassTransit.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GoalsService.Application\GoalsService.Application.csproj" />
+    <ProjectReference Include="..\GoalsService.Domain\GoalsService.Domain.csproj" />
+    <ProjectReference Include="..\..\..\building-blocks\DevTrackr.Contracts\DevTrackr.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\building-blocks\DevTrackr.Messaging\DevTrackr.Messaging.csproj" />
+    <ProjectReference Include="..\..\..\building-blocks\DevTrackr.SharedKernel\DevTrackr.SharedKernel.csproj" />
+  </ItemGroup>
+
+</Project>

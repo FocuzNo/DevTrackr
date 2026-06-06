@@ -1,0 +1,16 @@
+.git/
+.vs/
+.idea/
+**/bin/
+**/obj/
+**/TestResults/
+logs/
+.env
+.env.*
+!.env.example
+.docker/
+docker-compose.override.local.yml
+README-screenshots/
+*.tmp
+*.temp
+*.cache

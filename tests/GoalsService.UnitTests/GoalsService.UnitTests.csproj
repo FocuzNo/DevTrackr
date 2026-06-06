@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\building-blocks\DevTrackr.Contracts\DevTrackr.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\services\GoalsService\GoalsService.Application\GoalsService.Application.csproj" />
+    <ProjectReference Include="..\..\src\services\GoalsService\GoalsService.Domain\GoalsService.Domain.csproj" />
+    <ProjectReference Include="..\..\src\services\GoalsService\GoalsService.Infrastructure\GoalsService.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

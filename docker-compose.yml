@@ -1,0 +1,145 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: devtrackr-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: devtrackr-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: devtrackr-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  identity-service-api:
+    build:
+      context: .
+      dockerfile: src/services/IdentityService/IdentityService.Api/Dockerfile
+    container_name: devtrackr-identity-service
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Database: Host=postgres;Port=5432;Database=devtrackr_identity;Username=postgres;Password=postgres
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Username: guest
+      RabbitMq__Password: guest
+      Jwt__Issuer: DevTrackr
+      Jwt__Audience: DevTrackr
+      Jwt__Secret: devtrackr-local-development-secret-key-change-me
+      Jwt__SigningKey: devtrackr-local-development-secret-key-change-me
+      Jwt__ExpirationMinutes: 60
+    ports:
+      - "5101:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  goals-service-api:
+    build:
+      context: .
+      dockerfile: src/services/GoalsService/GoalsService.Api/Dockerfile
+    container_name: devtrackr-goals-service
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Database: Host=postgres;Port=5432;Database=devtrackr_goals;Username=postgres;Password=postgres
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Username: guest
+      RabbitMq__Password: guest
+      Jwt__Issuer: DevTrackr
+      Jwt__Audience: DevTrackr
+      Jwt__Secret: devtrackr-local-development-secret-key-change-me
+      CurrentUser__DevelopmentUserId: 11111111-1111-1111-1111-111111111111
+    ports:
+      - "5102:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  activity-service-api:
+    build:
+      context: .
+      dockerfile: src/services/ActivityService/ActivityService.Api/Dockerfile
+    container_name: devtrackr-activity-service
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Database: Host=postgres;Port=5432;Database=devtrackr_activity;Username=postgres;Password=postgres
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Username: guest
+      RabbitMq__Password: guest
+      Jwt__Issuer: DevTrackr
+      Jwt__Audience: DevTrackr
+      Jwt__Secret: devtrackr-local-development-secret-key-change-me
+    ports:
+      - "5103:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  statistics-service-api:
+    build:
+      context: .
+      dockerfile: src/services/StatisticsService/StatisticsService.Api/Dockerfile
+    container_name: devtrackr-statistics-service
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Database: Host=postgres;Port=5432;Database=devtrackr_statistics;Username=postgres;Password=postgres
+      ConnectionStrings__Redis: redis:6379
+      Redis__ConnectionString: redis:6379
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Username: guest
+      RabbitMq__Password: guest
+      Jwt__Issuer: DevTrackr
+      Jwt__Audience: DevTrackr
+      Jwt__Secret: devtrackr-local-development-secret-key-change-me
+    ports:
+      - "5104:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres-data:

@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>StatisticsService.Application</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\StatisticsService.Domain\StatisticsService.Domain.csproj" />
+    <ProjectReference Include="..\..\..\building-blocks\DevTrackr.SharedKernel\DevTrackr.SharedKernel.csproj" />
+  </ItemGroup>
+
+</Project>

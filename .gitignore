@@ -1,0 +1,80 @@
+# Build results
+[Bb]in/
+[Oo]bj/
+out/
+artifacts/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider / ReSharper
+.idea/
+_ReSharper*/
+*.DotSettings.user
+
+# VS Code
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/packages/
+packages/
+project.lock.json
+project.assets.json
+
+# Test results
+TestResults/
+coverage/
+coverage-report/
+*.coverage
+*.coveragexml
+*.trx
+*.opencover.xml
+*.cobertura.xml
+
+# Logs
+*.log
+logs/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# ASP.NET / local settings
+appsettings.Local.json
+appsettings.*.Local.json
+secrets.json
+
+# User secrets
+secrets/
+*.pfx
+*.key
+*.pem
+*.cer
+
+# Docker
+docker-compose.override.local.yml
+.docker/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
