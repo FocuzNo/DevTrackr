@@ -132,6 +132,7 @@ services:
       Jwt__Issuer: DevTrackr
       Jwt__Audience: DevTrackr
       Jwt__Secret: devtrackr-local-development-secret-key-change-me
+      CurrentUser__DevelopmentUserId: 11111111-1111-1111-1111-111111111111
     ports:
       - "5104:8080"
     depends_on:

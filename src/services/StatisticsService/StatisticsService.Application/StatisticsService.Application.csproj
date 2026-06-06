@@ -5,6 +5,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\building-blocks\DevTrackr.Cqrs\DevTrackr.Cqrs.csproj" />
+    <ProjectReference Include="..\..\..\building-blocks\DevTrackr.Contracts\DevTrackr.Contracts.csproj" />
     <ProjectReference Include="..\StatisticsService.Domain\StatisticsService.Domain.csproj" />
     <ProjectReference Include="..\..\..\building-blocks\DevTrackr.SharedKernel\DevTrackr.SharedKernel.csproj" />
   </ItemGroup>

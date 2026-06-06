@@ -22,7 +22,7 @@ DevTrackr is a small but professional .NET microservices backend for tracking a 
 3. `ActivityService`
    - study session logging, querying, and event publishing
 4. `StatisticsService`
-   - read models, dashboard stats, streaks, cache-backed statistics
+   - statistics projections, dashboard queries, streaks, Redis-backed dashboard cache
 
 ## Solution structure
 
@@ -379,7 +379,7 @@ You can replace `goals-service-api` with:
 docker compose up --build
 ```
 
-At this stage, `GoalsService` and `ActivityService` are fully wired microservices. `IdentityService` and `StatisticsService` are still startup-ready API stubs so the full solution can boot cleanly in Docker while their business and infrastructure logic is still being built out.
+At this stage, `GoalsService`, `ActivityService`, and `StatisticsService` are fully wired microservices. `IdentityService` is still a startup-ready API stub so the full solution can boot cleanly in Docker while its business and infrastructure logic is still being built out.
 
 ### Stop services
 
@@ -460,6 +460,73 @@ Create a new ActivityService migration later with:
 dotnet ef migrations add InitialCreate --project src/services/ActivityService/ActivityService.Infrastructure --startup-project src/services/ActivityService/ActivityService.Api
 ```
 
+## StatisticsService
+
+`StatisticsService` is the third fully implemented microservice in the solution.
+
+StatisticsService uses FastEndpoints for its HTTP surface, the shared custom mediator for all in-process queries, PostgreSQL for read models, and Redis only for dashboard caching.
+
+### Endpoints
+
+- `GET /api/statistics/dashboard`
+- `GET /api/statistics/weekly`
+- `GET /api/statistics/topics`
+- `GET /api/statistics/streak`
+- `GET /health`
+- `GET /scalar/v1`
+- `GET /api/system/ping`
+
+### Statistics read models
+
+StatisticsService stores three main read models in PostgreSQL:
+
+- `user_statistics`
+- `topic_statistics`
+- `daily_statistics`
+
+They are updated only from integration events and are optimized for fast dashboard-style reads.
+
+### Redis caching strategy
+
+- cache key: `devtrackr:statistics:dashboard:{userId}`
+- cache TTL: 5 minutes
+- dashboard responses are cached
+- any consumed study-session or goal-related integration event invalidates the cached dashboard for that user
+
+### Statistics event flow
+
+1. `ActivityService` publishes `StudySessionLoggedIntegrationEvent`.
+2. `GoalsService` consumes it and updates goal progress.
+3. `StatisticsService` also consumes it and updates:
+   - `user_statistics`
+   - `topic_statistics`
+   - `daily_statistics`
+4. `StatisticsService` consumes goal progress and completion events as follow-up signals.
+5. Relevant events invalidate the Redis dashboard cache for the affected user.
+
+### Current user handling
+
+StatisticsService reads the current user id from JWT claims when available. During local development, it supports the same development-only fallback user id pattern as the other implemented services:
+
+- `CurrentUser:DevelopmentUserId`
+- `CurrentUser__DevelopmentUserId` in Docker Compose
+
+## StatisticsService migrations
+
+In local and Docker development environments, StatisticsService applies EF Core migrations automatically on startup. You can also manage the schema manually when needed.
+
+Apply the StatisticsService database migration manually with:
+
+```bash
+dotnet ef database update --project src/services/StatisticsService/StatisticsService.Infrastructure --startup-project src/services/StatisticsService/StatisticsService.Api
+```
+
+Create a new StatisticsService migration later with:
+
+```bash
+dotnet ef migrations add InitialCreate --project src/services/StatisticsService/StatisticsService.Infrastructure --startup-project src/services/StatisticsService/StatisticsService.Api
+```
+
 ## Database setup notes
 
 Docker Compose runs a single PostgreSQL container. The application does not use SQL init scripts for schema creation.
@@ -477,6 +544,7 @@ Each service only points to its own database. No tables are shared across servic
 
 - If MassTransit outbox tables are missing in `GoalsService`, run the EF Core migrations again or recreate local Docker volumes with `docker compose down -v`.
 - If MassTransit outbox tables are missing in `ActivityService`, run the EF Core migrations again or recreate local Docker volumes with `docker compose down -v`.
+- If statistics look stale, trigger a new study session or goal event to invalidate the dashboard cache, or clear Redis locally when debugging cached dashboard responses.
 - If Docker build fails with `rpc error: code = Unavailable desc = error reading from server: EOF`, try:
 
 ```powershell
@@ -500,10 +568,10 @@ wsl --shutdown
 ## Next implementation steps
 
 1. Implement `IdentityService` registration/login and real JWT issuance.
-2. Build `StatisticsService` projections for dashboard, weekly progress, topic stats, and streaks.
-3. Add integration tests around ActivityService and GoalsService persistence, outbox behavior, and event consumption.
-4. Add authentication/authorization coverage across the APIs instead of relying on development user fallbacks.
-5. Expand CI verification for migrations, Docker startup, and cross-service event flow.
+2. Add integration tests around cross-service event processing and Redis cache invalidation.
+3. Add authentication/authorization coverage across the APIs instead of relying on development user fallbacks.
+4. Expand CI verification for migrations, Docker startup, and cross-service event flow.
+5. Add observability around consumer lag, projection failures, and cache hit rate.
 
 ## Roadmap
 
@@ -511,8 +579,8 @@ wsl --shutdown
 - [ ] Real registration/login flow
 - [ ] Goal lifecycle and progress updates
 - [x] Study session persistence and outbox publishing
-- [ ] Statistics projections and dashboard endpoints
-- [ ] Cache invalidation and dashboard optimization
+- [x] Statistics projections and dashboard endpoints
+- [x] Cache invalidation and dashboard optimization
 - [ ] Better authentication/authorization coverage
 - [ ] CI pipeline
 - [ ] Observability improvements
@@ -557,3 +625,32 @@ docker compose up --build
 ```bash
 docker compose logs --tail=150 activity-service-api goals-service-api
 ```
+
+## End-to-end check: Dashboard
+
+Once Docker is running, you can verify the statistics flow with this sequence:
+
+1. Start the full stack:
+
+```bash
+docker compose up --build
+```
+
+2. Create a goal in GoalsService:
+   - [http://localhost:5102/scalar/v1](http://localhost:5102/scalar/v1)
+
+3. Log a study session in ActivityService:
+   - [http://localhost:5103/scalar/v1](http://localhost:5103/scalar/v1)
+
+4. Open StatisticsService Scalar:
+   - [http://localhost:5104/scalar/v1](http://localhost:5104/scalar/v1)
+
+5. Call:
+   - `GET /api/statistics/dashboard`
+   - `GET /api/statistics/weekly`
+   - `GET /api/statistics/topics`
+   - `GET /api/statistics/streak`
+
+6. Call `GET /api/statistics/dashboard` again to verify the cached path still returns the same response.
+
+7. Log another study session and call `GET /api/statistics/dashboard` again. The new event should invalidate the cached dashboard and the response should reflect the updated totals.

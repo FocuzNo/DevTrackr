@@ -2,9 +2,13 @@ using DevTrackr.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using StatisticsService.Application.Abstractions.Caching;
+using StatisticsService.Application.Abstractions.Persistence;
 using StatisticsService.Infrastructure.Caching;
+using StatisticsService.Infrastructure.HealthChecks;
 using StatisticsService.Infrastructure.Messaging;
 using StatisticsService.Infrastructure.Persistence;
+using StatisticsService.Infrastructure.Persistence.Repositories;
 
 namespace StatisticsService.Infrastructure;
 
@@ -22,11 +26,21 @@ public static class DependencyInjection
             options.UseNpgsql(
                 connectionString,
                 x => x.MigrationsAssembly(typeof(StatisticsDbContext).Assembly.FullName)));
-        services.AddHealthChecks();
+        services.AddScoped<IStatisticsReadRepository, StatisticsReadRepository>();
+        services.AddScoped<IStatisticsProjectionRepository, StatisticsProjectionRepository>();
+        services.AddScoped<IProcessedIntegrationEventRepository, ProcessedIntegrationEventRepository>();
+        services.AddScoped<IStatisticsUnitOfWork, StatisticsUnitOfWork>();
+        services.AddScoped<StudySessionLoggedEventProcessor>();
+        services.AddScoped<GoalProgressUpdatedEventProcessor>();
+        services.AddScoped<GoalCompletedEventProcessor>();
+
+        services.AddHealthChecks()
+            .AddCheck<StatisticsDbContextHealthCheck>("postgresql")
+            .AddCheck<RabbitMqOptionsHealthCheck>("rabbitmq");
 
         services.Configure<StatisticsCacheOptions>(configuration.GetSection(StatisticsCacheOptions.SectionName));
         services.AddStackExchangeRedisCache(options => options.Configuration = redisConnectionString);
-        services.AddScoped<IStatisticsDashboardCache, StatisticsDashboardCache>();
+        services.AddScoped<IDashboardCache, StatisticsDashboardCache>();
 
         services.AddDevTrackrMassTransit<StatisticsDbContext>(
             configuration,
@@ -35,7 +49,8 @@ public static class DependencyInjection
                 x.AddConsumer<StudySessionLoggedConsumer>();
                 x.AddConsumer<GoalProgressUpdatedConsumer>();
                 x.AddConsumer<GoalCompletedConsumer>();
-            });
+            },
+            endpointNamePrefix: "statistics");
 
         return services;
     }

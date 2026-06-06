@@ -34,7 +34,8 @@ public static class DependencyInjection
         services.AddDevTrackrMassTransit<GoalsDbContext>(
             configuration,
             configureConsumers: x => x.AddConsumer<StudySessionLoggedConsumer>(),
-            useEntityFrameworkOutbox: true);
+            useEntityFrameworkOutbox: true,
+            endpointNamePrefix: "goals");
 
         return services;
     }
