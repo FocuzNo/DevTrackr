@@ -122,7 +122,7 @@ RabbitMQ is the broker, MassTransit is the bus, the custom mediator is used only
   - EF Core outbox registration support
 - Per-service `DbContext` setup
 - Redis cache abstraction for `StatisticsService`
-- Minimal API endpoints per service
+- FastEndpoints-based HTTP surfaces for implemented services
 - Scalar docs and `/health` endpoint per API
 - Dockerfiles for each API
 - Docker Compose with PostgreSQL, Redis, RabbitMQ, and all four APIs
@@ -219,6 +219,8 @@ GoalsService reads the current user id from JWT claims when available. During lo
 
 `ActivityService` is the second fully implemented microservice in the solution.
 
+ActivityService uses FastEndpoints for its HTTP surface and the shared custom mediator for all command/query dispatch.
+
 ### Endpoints
 
 - `POST /api/study-sessions`
@@ -245,10 +247,12 @@ GoalsService reads the current user id from JWT claims when available. During lo
 ### ActivityService event flow
 
 1. `POST /api/study-sessions` creates a `StudySession` aggregate.
-2. `ActivityService` persists the aggregate to PostgreSQL.
-3. `ActivityService` publishes `StudySessionLoggedIntegrationEvent` through MassTransit using the EF Core outbox.
-4. `GoalsService` consumes the event and adds `DurationMinutes` to the matching goal.
-5. `GoalsService` then publishes `GoalProgressUpdatedIntegrationEvent` when progress changes.
+2. The endpoint sends `LogStudySessionCommand` through `IAppMediator`.
+3. The FluentValidation pipeline validates request shape before the handler runs.
+4. `ActivityService` persists the aggregate to PostgreSQL.
+5. `ActivityService` publishes `StudySessionLoggedIntegrationEvent` through MassTransit using the EF Core outbox.
+6. `GoalsService` consumes the event and adds `DurationMinutes` to the matching goal.
+7. `GoalsService` then publishes `GoalProgressUpdatedIntegrationEvent` when progress changes.
 
 ### Current user handling
 

@@ -1,11 +1,10 @@
-using ActivityService.Application.Sessions.Responses;
 using DevTrackr.SharedKernel.Primitives;
 
 namespace ActivityService.Api.Extensions;
 
 public static class ResultHttpExtensions
 {
-    public static IResult ToApiResult(this Result<StudySessionResponse> result, Func<StudySessionResponse, IResult> onSuccess)
+    public static IResult ToApiResult<TValue>(this Result<TValue> result, Func<TValue, IResult> onSuccess)
     {
         if (result.IsSuccess && result.Value is not null)
         {
@@ -15,7 +14,7 @@ public static class ResultHttpExtensions
         return MapFailure(result.Error);
     }
 
-    public static IResult ToApiResult(this Result<IReadOnlyList<StudySessionListItemResponse>> result)
+    public static IResult ToApiResult<TValue>(this Result<TValue> result)
     {
         if (result.IsSuccess && result.Value is not null)
         {

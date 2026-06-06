@@ -1,4 +1,7 @@
+using ActivityService.Application.Sessions.Responses;
 using ActivityService.Domain.Sessions;
+using DevTrackr.Cqrs.Abstractions;
+using DevTrackr.SharedKernel.Primitives;
 
 namespace ActivityService.Application.Sessions.Commands;
 
@@ -9,4 +12,4 @@ public sealed record LogStudySessionCommand(
     int DurationMinutes,
     StudySessionDifficulty Difficulty,
     string? Note,
-    DateOnly SessionDate);
+    DateOnly SessionDate) : ICommand<Result<StudySessionResponse>>;

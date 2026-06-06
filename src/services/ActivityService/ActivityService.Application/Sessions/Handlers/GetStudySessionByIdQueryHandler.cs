@@ -1,8 +1,8 @@
-using ActivityService.Application.Abstractions;
 using ActivityService.Application.Abstractions.Persistence;
 using ActivityService.Application.Sessions.Queries;
 using ActivityService.Application.Sessions.Responses;
 using ActivityService.Domain.Sessions;
+using DevTrackr.Cqrs.Abstractions;
 using DevTrackr.SharedKernel.Primitives;
 
 namespace ActivityService.Application.Sessions.Handlers;
