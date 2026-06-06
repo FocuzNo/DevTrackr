@@ -1,27 +1,28 @@
 using DevTrackr.Contracts;
 using Microsoft.Extensions.Logging;
 using StatisticsService.Application.Abstractions.Caching;
+using StatisticsService.Domain.Statistics;
 using StatisticsService.Infrastructure.Persistence;
 using StatisticsService.Infrastructure.Persistence.Entities;
 using StatisticsService.Infrastructure.Persistence.Repositories;
 
 namespace StatisticsService.Infrastructure.Messaging;
 
-public sealed class GoalProgressUpdatedEventProcessor(
+public sealed class GoalCreatedEventProcessor(
     IStatisticsProjectionRepository repository,
     IProcessedIntegrationEventRepository processedEvents,
     IStatisticsUnitOfWork unitOfWork,
     IDashboardCache cache,
-    ILogger<GoalProgressUpdatedEventProcessor> logger)
+    ILogger<GoalCreatedEventProcessor> logger)
 {
     public async Task ProcessAsync(
-        GoalProgressUpdatedIntegrationEvent integrationEvent,
+        GoalCreatedIntegrationEvent integrationEvent,
         CancellationToken cancellationToken)
     {
         if (await processedEvents.ExistsAsync(integrationEvent.EventId, cancellationToken))
         {
             logger.LogInformation(
-                "Goal progress event {EventId} already processed for UserId {UserId}",
+                "Goal created event {EventId} already processed for UserId {UserId}",
                 integrationEvent.EventId,
                 integrationEvent.UserId);
             return;
@@ -29,16 +30,16 @@ public sealed class GoalProgressUpdatedEventProcessor(
 
         var userStatistics = await repository.GetOrCreateUserStatisticsAsync(
             integrationEvent.UserId,
-            integrationEvent.OccurredOnUtc,
+            integrationEvent.OccurredAt,
             cancellationToken);
 
-        userStatistics.ApplyGoalProgress(integrationEvent.OccurredOnUtc);
+        userStatistics.ApplyGoalCreated(integrationEvent.OccurredAt);
 
         await processedEvents.AddAsync(
             new ProcessedIntegrationEvent
             {
                 EventId = integrationEvent.EventId,
-                EventType = nameof(GoalProgressUpdatedIntegrationEvent),
+                EventType = nameof(GoalCreatedIntegrationEvent),
                 ProcessedAtUtc = DateTime.UtcNow
             },
             cancellationToken);

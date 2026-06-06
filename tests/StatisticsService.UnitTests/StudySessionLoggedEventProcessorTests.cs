@@ -39,9 +39,9 @@ public sealed class StudySessionLoggedEventProcessorTests
 
         await processor.ProcessAsync(integrationEvent, CancellationToken.None);
 
-        Assert.Single(repository.UserStatistics);
-        Assert.Single(repository.TopicStatistics);
-        Assert.Single(repository.DailyStatistics);
+        Assert.Single(repository.UserStatisticsItems);
+        Assert.Single(repository.TopicStatisticsItems);
+        Assert.Single(repository.DailyStatisticsItems);
         Assert.Equal(1, cache.Invalidations);
     }
 
@@ -72,7 +72,7 @@ public sealed class StudySessionLoggedEventProcessorTests
                 DateTime.UtcNow),
             CancellationToken.None);
 
-        Assert.Empty(repository.UserStatistics);
+        Assert.Empty(repository.UserStatisticsItems);
         Assert.Equal(0, cache.Invalidations);
     }
 
@@ -89,37 +89,54 @@ public sealed class StudySessionLoggedEventProcessorTests
 
     private sealed class InMemoryProjectionRepository : IStatisticsProjectionRepository
     {
-        public List<UserStatistics> UserStatistics { get; } = [];
-        public List<TopicStatistics> TopicStatistics { get; } = [];
-        public List<DailyStatistics> DailyStatistics { get; } = [];
+        public List<UserStatistics> UserStatisticsItems { get; } = [];
+        public List<TopicStatistics> TopicStatisticsItems { get; } = [];
+        public List<DailyStatistics> DailyStatisticsItems { get; } = [];
 
         public Task<UserStatistics?> GetUserStatisticsAsync(Guid userId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(UserStatistics.FirstOrDefault(x => x.UserId == userId));
+            Task.FromResult(UserStatisticsItems.FirstOrDefault(x => x.UserId == userId));
+
+        public async Task<UserStatistics> GetOrCreateUserStatisticsAsync(
+            Guid userId,
+            DateTime updatedAtUtc,
+            CancellationToken cancellationToken = default)
+        {
+            var userStatistics = await GetUserStatisticsAsync(userId, cancellationToken);
+            if (userStatistics is not null)
+            {
+                return userStatistics;
+            }
+
+            userStatistics = StatisticsService.Domain.Statistics.UserStatistics.Create(userId, updatedAtUtc);
+            UserStatisticsItems.Add(userStatistics);
+
+            return userStatistics;
+        }
 
         public Task<TopicStatistics?> GetTopicStatisticsAsync(Guid userId, string topic, CancellationToken cancellationToken = default) =>
-            Task.FromResult(TopicStatistics.FirstOrDefault(x => x.UserId == userId && x.Topic == topic));
+            Task.FromResult(TopicStatisticsItems.FirstOrDefault(x => x.UserId == userId && x.Topic == topic));
 
         public Task<DailyStatistics?> GetDailyStatisticsAsync(Guid userId, DateOnly date, CancellationToken cancellationToken = default) =>
-            Task.FromResult(DailyStatistics.FirstOrDefault(x => x.UserId == userId && x.Date == date));
+            Task.FromResult(DailyStatisticsItems.FirstOrDefault(x => x.UserId == userId && x.Date == date));
 
         public Task<IReadOnlyList<DateOnly>> GetStudyDatesAsync(Guid userId, CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<DateOnly>>(DailyStatistics.Where(x => x.UserId == userId).Select(x => x.Date).OrderByDescending(x => x).ToArray());
+            Task.FromResult<IReadOnlyList<DateOnly>>(DailyStatisticsItems.Where(x => x.UserId == userId).Select(x => x.Date).OrderByDescending(x => x).ToArray());
 
         public Task AddAsync(UserStatistics userStatistics, CancellationToken cancellationToken = default)
         {
-            UserStatistics.Add(userStatistics);
+            UserStatisticsItems.Add(userStatistics);
             return Task.CompletedTask;
         }
 
         public Task AddAsync(TopicStatistics topicStatistics, CancellationToken cancellationToken = default)
         {
-            TopicStatistics.Add(topicStatistics);
+            TopicStatisticsItems.Add(topicStatistics);
             return Task.CompletedTask;
         }
 
         public Task AddAsync(DailyStatistics dailyStatistics, CancellationToken cancellationToken = default)
         {
-            DailyStatistics.Add(dailyStatistics);
+            DailyStatisticsItems.Add(dailyStatistics);
             return Task.CompletedTask;
         }
     }

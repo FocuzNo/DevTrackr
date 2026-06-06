@@ -7,12 +7,14 @@ using GoalsService.Application.Goals.Responses;
 
 namespace GoalsService.Application.Goals.Handlers;
 
-public sealed class GetGoalsQueryHandler(IGoalRepository goalRepository)
+public sealed class GetGoalsQueryHandler(IGoalReadRepository goalReadRepository)
     : IQueryHandler<GetGoalsQuery, Result<IReadOnlyList<GoalListItemResponse>>>
 {
-    public async Task<Result<IReadOnlyList<GoalListItemResponse>>> HandleAsync(GetGoalsQuery query, CancellationToken cancellationToken = default)
+    public async Task<Result<IReadOnlyList<GoalListItemResponse>>> HandleAsync(
+        GetGoalsQuery query,
+        CancellationToken cancellationToken = default)
     {
-        var goals = await goalRepository.GetByUserIdAsync(query.UserId, cancellationToken);
-        return Result<IReadOnlyList<GoalListItemResponse>>.Success(goals.Select(x => x.ToListItem()).ToArray());
+        var goals = await goalReadRepository.GetByUserIdAsync(query.UserId, cancellationToken);
+        return Result<IReadOnlyList<GoalListItemResponse>>.Success(goals);
     }
 }

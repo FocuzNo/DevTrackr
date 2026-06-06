@@ -1,7 +1,6 @@
 using DevTrackr.Contracts;
 using Microsoft.Extensions.Logging;
 using StatisticsService.Application.Abstractions.Caching;
-using StatisticsService.Domain.Statistics;
 using StatisticsService.Infrastructure.Persistence;
 using StatisticsService.Infrastructure.Persistence.Entities;
 using StatisticsService.Infrastructure.Persistence.Repositories;
@@ -15,7 +14,9 @@ public sealed class GoalCompletedEventProcessor(
     IDashboardCache cache,
     ILogger<GoalCompletedEventProcessor> logger)
 {
-    public async Task ProcessAsync(GoalCompletedIntegrationEvent integrationEvent, CancellationToken cancellationToken)
+    public async Task ProcessAsync(
+        GoalCompletedIntegrationEvent integrationEvent,
+        CancellationToken cancellationToken)
     {
         if (await processedEvents.ExistsAsync(integrationEvent.EventId, cancellationToken))
         {
@@ -26,21 +27,10 @@ public sealed class GoalCompletedEventProcessor(
             return;
         }
 
-        var userStatistics = await repository.GetUserStatisticsAsync(integrationEvent.UserId, cancellationToken)
-            ?? UserStatistics.Create(integrationEvent.UserId, integrationEvent.OccurredOnUtc);
-
-        if (userStatistics.TotalSessions == 0 && userStatistics.TotalStudyMinutes == 0)
-        {
-            var existing = await repository.GetUserStatisticsAsync(integrationEvent.UserId, cancellationToken);
-            if (existing is null)
-            {
-                await repository.AddAsync(userStatistics, cancellationToken);
-            }
-            else
-            {
-                userStatistics = existing;
-            }
-        }
+        var userStatistics = await repository.GetOrCreateUserStatisticsAsync(
+            integrationEvent.UserId,
+            integrationEvent.OccurredOnUtc,
+            cancellationToken);
 
         userStatistics.ApplyGoalCompleted(integrationEvent.OccurredOnUtc);
 

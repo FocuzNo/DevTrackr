@@ -4,6 +4,11 @@ namespace StatisticsService.Infrastructure.Persistence.Repositories;
 
 public interface IStatisticsProjectionRepository
 {
+    Task<UserStatistics> GetOrCreateUserStatisticsAsync(
+        Guid userId,
+        DateTime updatedAtUtc,
+        CancellationToken cancellationToken = default);
+
     Task<UserStatistics?> GetUserStatisticsAsync(Guid userId, CancellationToken cancellationToken = default);
 
     Task<TopicStatistics?> GetTopicStatisticsAsync(Guid userId, string topic, CancellationToken cancellationToken = default);

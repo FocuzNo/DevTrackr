@@ -1,5 +1,7 @@
 namespace DevTrackr.SharedKernel.Primitives;
 
+public abstract class Entity(Guid id) : Entity<Guid>(id);
+
 public abstract class Entity<TId>
     where TId : notnull
 {

@@ -23,6 +23,7 @@ public static class DependencyInjection
                 x => x.MigrationsAssembly(typeof(GoalsDbContext).Assembly.FullName)));
 
         services.AddScoped<IGoalRepository, GoalRepository>();
+        services.AddScoped<IGoalReadRepository, GoalReadRepository>();
         services.AddScoped<IProcessedIntegrationEventRepository, ProcessedIntegrationEventRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<StudySessionLoggedIntegrationEventProcessor>();

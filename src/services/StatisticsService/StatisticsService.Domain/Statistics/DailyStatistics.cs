@@ -1,12 +1,13 @@
+using DevTrackr.SharedKernel.Primitives;
+
 namespace StatisticsService.Domain.Statistics;
 
-public sealed class DailyStatistics
+public sealed class DailyStatistics : Entity
 {
     private DailyStatistics()
+        : base(Guid.Empty)
     {
     }
-
-    public Guid Id { get; private set; }
 
     public Guid UserId { get; private set; }
 
@@ -20,16 +21,26 @@ public sealed class DailyStatistics
 
     public DateTime UpdatedAt { get; private set; }
 
-    public static DailyStatistics Create(Guid userId, DateOnly date, DateTime updatedAtUtc) =>
-        new()
+    public static DailyStatistics Create(
+        Guid userId,
+        DateOnly date,
+        DateTime updatedAtUtc) =>
+        new(Guid.NewGuid())
         {
-            Id = Guid.NewGuid(),
             UserId = userId,
             Date = date,
             UpdatedAt = updatedAtUtc
         };
 
-    public void ApplyStudySession(int durationMinutes, int difficulty, DateTime updatedAtUtc)
+    private DailyStatistics(Guid id)
+        : base(id)
+    {
+    }
+
+    public void ApplyStudySession(
+        int durationMinutes,
+        int difficulty,
+        DateTime updatedAtUtc)
     {
         AverageDifficulty = SessionsCount == 0
             ? difficulty

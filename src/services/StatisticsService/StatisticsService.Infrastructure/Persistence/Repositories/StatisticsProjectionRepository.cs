@@ -5,6 +5,23 @@ namespace StatisticsService.Infrastructure.Persistence.Repositories;
 
 public sealed class StatisticsProjectionRepository(StatisticsDbContext dbContext) : IStatisticsProjectionRepository
 {
+    public async Task<UserStatistics> GetOrCreateUserStatisticsAsync(
+        Guid userId,
+        DateTime updatedAtUtc,
+        CancellationToken cancellationToken = default)
+    {
+        var userStatistics = await GetUserStatisticsAsync(userId, cancellationToken);
+        if (userStatistics is not null)
+        {
+            return userStatistics;
+        }
+
+        userStatistics = UserStatistics.Create(userId, updatedAtUtc);
+        await AddAsync(userStatistics, cancellationToken);
+
+        return userStatistics;
+    }
+
     public Task<UserStatistics?> GetUserStatisticsAsync(Guid userId, CancellationToken cancellationToken = default) =>
         dbContext.UserStatistics.FirstOrDefaultAsync(x => x.UserId == userId, cancellationToken);
 

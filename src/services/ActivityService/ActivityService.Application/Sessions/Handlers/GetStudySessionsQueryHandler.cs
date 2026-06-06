@@ -6,13 +6,14 @@ using DevTrackr.SharedKernel.Primitives;
 
 namespace ActivityService.Application.Sessions.Handlers;
 
-public sealed class GetStudySessionsQueryHandler(IStudySessionRepository studySessionRepository)
+public sealed class GetStudySessionsQueryHandler(IStudySessionReadRepository studySessionReadRepository)
     : IQueryHandler<GetStudySessionsQuery, Result<IReadOnlyList<StudySessionListItemResponse>>>
 {
-    public async Task<Result<IReadOnlyList<StudySessionListItemResponse>>> HandleAsync(GetStudySessionsQuery query, CancellationToken cancellationToken = default)
+    public async Task<Result<IReadOnlyList<StudySessionListItemResponse>>> HandleAsync(
+        GetStudySessionsQuery query,
+        CancellationToken cancellationToken = default)
     {
-        var studySessions = await studySessionRepository.GetByUserIdAsync(query.UserId, cancellationToken);
-        return Result<IReadOnlyList<StudySessionListItemResponse>>.Success(
-            studySessions.Select(x => x.ToListItemResponse()).ToArray());
+        var studySessions = await studySessionReadRepository.GetByUserIdAsync(query.UserId, cancellationToken);
+        return Result<IReadOnlyList<StudySessionListItemResponse>>.Success(studySessions);
     }
 }
