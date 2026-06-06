@@ -1,10 +1,8 @@
 using ActivityService.Application.Abstractions.Persistence;
 using ActivityService.Application.Sessions.Commands;
 using ActivityService.Application.Sessions.Handlers;
-using ActivityService.Application.Sessions.Validators;
 using ActivityService.Domain.Sessions;
 using DevTrackr.Contracts;
-using FluentValidation;
 using MassTransit;
 using Xunit;
 
@@ -20,7 +18,6 @@ public sealed class LogStudySessionCommandHandlerTests
         var handler = new LogStudySessionCommandHandler(
             repository,
             new TestUnitOfWork(),
-            new LogStudySessionCommandValidator(),
             publishEndpoint);
 
         var command = new LogStudySessionCommand(

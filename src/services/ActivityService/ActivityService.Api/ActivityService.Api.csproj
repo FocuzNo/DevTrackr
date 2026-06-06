@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="FastEndpoints" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -16,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\building-blocks\DevTrackr.Cqrs\DevTrackr.Cqrs.csproj" />
     <ProjectReference Include="..\ActivityService.Application\ActivityService.Application.csproj" />
     <ProjectReference Include="..\ActivityService.Infrastructure\ActivityService.Infrastructure.csproj" />
   </ItemGroup>

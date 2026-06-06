@@ -10,6 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\building-blocks\DevTrackr.Cqrs\DevTrackr.Cqrs.csproj" />
     <ProjectReference Include="..\..\..\building-blocks\DevTrackr.Contracts\DevTrackr.Contracts.csproj" />
     <ProjectReference Include="..\ActivityService.Domain\ActivityService.Domain.csproj" />
     <ProjectReference Include="..\..\..\building-blocks\DevTrackr.SharedKernel\DevTrackr.SharedKernel.csproj" />
