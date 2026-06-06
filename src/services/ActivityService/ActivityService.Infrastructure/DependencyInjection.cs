@@ -22,6 +22,7 @@ public static class DependencyInjection
                 x => x.MigrationsAssembly(typeof(ActivityDbContext).Assembly.FullName)));
 
         services.AddScoped<IStudySessionRepository, StudySessionRepository>();
+        services.AddScoped<IStudySessionReadRepository, StudySessionReadRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         services.AddHealthChecks()

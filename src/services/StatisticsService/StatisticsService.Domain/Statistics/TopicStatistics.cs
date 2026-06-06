@@ -1,12 +1,13 @@
+using DevTrackr.SharedKernel.Primitives;
+
 namespace StatisticsService.Domain.Statistics;
 
-public sealed class TopicStatistics
+public sealed class TopicStatistics : Entity
 {
     private TopicStatistics()
+        : base(Guid.Empty)
     {
     }
-
-    public Guid Id { get; private set; }
 
     public Guid UserId { get; private set; }
 
@@ -20,16 +21,26 @@ public sealed class TopicStatistics
 
     public DateTime UpdatedAt { get; private set; }
 
-    public static TopicStatistics Create(Guid userId, string topic, DateTime updatedAtUtc) =>
-        new()
+    public static TopicStatistics Create(
+        Guid userId,
+        string topic,
+        DateTime updatedAtUtc) =>
+        new(Guid.NewGuid())
         {
-            Id = Guid.NewGuid(),
             UserId = userId,
             Topic = topic,
             UpdatedAt = updatedAtUtc
         };
 
-    public void ApplyStudySession(int durationMinutes, int difficulty, DateTime updatedAtUtc)
+    private TopicStatistics(Guid id)
+        : base(id)
+    {
+    }
+
+    public void ApplyStudySession(
+        int durationMinutes,
+        int difficulty,
+        DateTime updatedAtUtc)
     {
         AverageDifficulty = SessionsCount == 0
             ? difficulty

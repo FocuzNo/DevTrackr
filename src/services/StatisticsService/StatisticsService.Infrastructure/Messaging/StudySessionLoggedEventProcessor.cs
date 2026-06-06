@@ -15,7 +15,9 @@ public sealed class StudySessionLoggedEventProcessor(
     IDashboardCache cache,
     ILogger<StudySessionLoggedEventProcessor> logger)
 {
-    public async Task ProcessAsync(StudySessionLoggedIntegrationEvent integrationEvent, CancellationToken cancellationToken)
+    public async Task ProcessAsync(
+        StudySessionLoggedIntegrationEvent integrationEvent,
+        CancellationToken cancellationToken)
     {
         if (await processedEvents.ExistsAsync(integrationEvent.EventId, cancellationToken))
         {
@@ -59,21 +61,10 @@ public sealed class StudySessionLoggedEventProcessor(
 
         topicStatistics.ApplyStudySession(integrationEvent.DurationMinutes, integrationEvent.Difficulty, updatedAtUtc);
 
-        var userStatistics = await repository.GetUserStatisticsAsync(integrationEvent.UserId, cancellationToken)
-            ?? UserStatistics.Create(integrationEvent.UserId, updatedAtUtc);
-
-        if (userStatistics.TotalSessions == 0 && userStatistics.TotalStudyMinutes == 0 && userStatistics.Id != Guid.Empty)
-        {
-            var existing = await repository.GetUserStatisticsAsync(integrationEvent.UserId, cancellationToken);
-            if (existing is null)
-            {
-                await repository.AddAsync(userStatistics, cancellationToken);
-            }
-            else
-            {
-                userStatistics = existing;
-            }
-        }
+        var userStatistics = await repository.GetOrCreateUserStatisticsAsync(
+            integrationEvent.UserId,
+            updatedAtUtc,
+            cancellationToken);
 
         var studyDates = await repository.GetStudyDatesAsync(integrationEvent.UserId, cancellationToken);
         var recalculated = RecalculateStreaks(studyDates, integrationEvent.SessionDate);

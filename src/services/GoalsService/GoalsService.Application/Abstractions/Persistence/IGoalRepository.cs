@@ -1,12 +1,12 @@
+using DevTrackr.SharedKernel.Persistence;
 using GoalsService.Domain.Goals;
 
 namespace GoalsService.Application.Abstractions.Persistence;
 
-public interface IGoalRepository
+public interface IGoalRepository : IRepository<Goal>
 {
-    Task AddAsync(Goal goal, CancellationToken cancellationToken = default);
-
-    Task<Goal?> GetByIdAsync(Guid goalId, Guid userId, CancellationToken cancellationToken = default);
-
-    Task<IReadOnlyList<Goal>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<Goal?> GetByIdAsync(
+        Guid goalId,
+        Guid userId,
+        CancellationToken cancellationToken = default);
 }

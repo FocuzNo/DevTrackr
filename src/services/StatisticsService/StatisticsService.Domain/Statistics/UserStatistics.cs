@@ -1,12 +1,13 @@
+using DevTrackr.SharedKernel.Primitives;
+
 namespace StatisticsService.Domain.Statistics;
 
-public sealed class UserStatistics
+public sealed class UserStatistics : Entity
 {
     private UserStatistics()
+        : base(Guid.Empty)
     {
     }
-
-    public Guid Id { get; private set; }
 
     public Guid UserId { get; private set; }
 
@@ -28,15 +29,27 @@ public sealed class UserStatistics
 
     public DateTime UpdatedAt { get; private set; }
 
-    public static UserStatistics Create(Guid userId, DateTime updatedAtUtc) =>
-        new()
+    public static UserStatistics Create(
+        Guid userId,
+        DateTime updatedAtUtc) =>
+        new(Guid.NewGuid())
         {
-            Id = Guid.NewGuid(),
             UserId = userId,
             UpdatedAt = updatedAtUtc
         };
 
-    public void ApplyStudySession(int durationMinutes, int difficulty, DateOnly sessionDate, int currentStreak, int longestStreak, DateTime updatedAtUtc)
+    private UserStatistics(Guid id)
+        : base(id)
+    {
+    }
+
+    public void ApplyStudySession(
+        int durationMinutes,
+        int difficulty,
+        DateOnly sessionDate,
+        int currentStreak,
+        int longestStreak,
+        DateTime updatedAtUtc)
     {
         AverageDifficulty = CalculateAverage(AverageDifficulty, TotalSessions, difficulty);
         TotalStudyMinutes += durationMinutes;
@@ -49,18 +62,25 @@ public sealed class UserStatistics
 
     public void ApplyGoalProgress(DateTime updatedAtUtc)
     {
-        ActiveGoals = Math.Max(ActiveGoals, 1);
+        UpdatedAt = updatedAtUtc;
+    }
+
+    public void ApplyGoalCreated(DateTime updatedAtUtc)
+    {
+        ActiveGoals++;
+        UpdatedAt = updatedAtUtc;
+    }
+
+    public void ApplyGoalCancelled(DateTime updatedAtUtc)
+    {
+        ActiveGoals = Math.Max(0, ActiveGoals - 1);
         UpdatedAt = updatedAtUtc;
     }
 
     public void ApplyGoalCompleted(DateTime updatedAtUtc)
     {
         CompletedGoals++;
-        if (ActiveGoals > 0)
-        {
-            ActiveGoals--;
-        }
-
+        ActiveGoals = Math.Max(0, ActiveGoals - 1);
         UpdatedAt = updatedAtUtc;
     }
 

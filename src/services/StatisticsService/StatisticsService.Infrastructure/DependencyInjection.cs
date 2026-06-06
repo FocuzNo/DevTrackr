@@ -30,6 +30,8 @@ public static class DependencyInjection
         services.AddScoped<IStatisticsProjectionRepository, StatisticsProjectionRepository>();
         services.AddScoped<IProcessedIntegrationEventRepository, ProcessedIntegrationEventRepository>();
         services.AddScoped<IStatisticsUnitOfWork, StatisticsUnitOfWork>();
+        services.AddScoped<GoalCreatedEventProcessor>();
+        services.AddScoped<GoalCancelledEventProcessor>();
         services.AddScoped<StudySessionLoggedEventProcessor>();
         services.AddScoped<GoalProgressUpdatedEventProcessor>();
         services.AddScoped<GoalCompletedEventProcessor>();
@@ -46,6 +48,8 @@ public static class DependencyInjection
             configuration,
             configureConsumers: x =>
             {
+                x.AddConsumer<GoalCreatedConsumer>();
+                x.AddConsumer<GoalCancelledConsumer>();
                 x.AddConsumer<StudySessionLoggedConsumer>();
                 x.AddConsumer<GoalProgressUpdatedConsumer>();
                 x.AddConsumer<GoalCompletedConsumer>();

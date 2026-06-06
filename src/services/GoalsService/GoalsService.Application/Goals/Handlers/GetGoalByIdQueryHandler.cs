@@ -4,17 +4,18 @@ using GoalsService.Application.Abstractions.Persistence;
 using GoalsService.Application.Goals.Queries;
 using GoalsService.Application.Goals.Responses;
 using GoalsService.Domain.Goals;
-
 namespace GoalsService.Application.Goals.Handlers;
 
-public sealed class GetGoalByIdQueryHandler(IGoalRepository goalRepository)
+public sealed class GetGoalByIdQueryHandler(IGoalReadRepository goalReadRepository)
     : IQueryHandler<GetGoalByIdQuery, Result<GoalResponse>>
 {
-    public async Task<Result<GoalResponse>> HandleAsync(GetGoalByIdQuery query, CancellationToken cancellationToken = default)
+    public async Task<Result<GoalResponse>> HandleAsync(
+        GetGoalByIdQuery query,
+        CancellationToken cancellationToken = default)
     {
-        var goal = await goalRepository.GetByIdAsync(query.GoalId, query.UserId, cancellationToken);
+        var goal = await goalReadRepository.GetByIdAsync(query.GoalId, query.UserId, cancellationToken);
         return goal is null
             ? Result<GoalResponse>.Failure(GoalErrors.GoalNotFound)
-            : Result<GoalResponse>.Success(goal.ToResponse());
+            : Result<GoalResponse>.Success(goal);
     }
 }

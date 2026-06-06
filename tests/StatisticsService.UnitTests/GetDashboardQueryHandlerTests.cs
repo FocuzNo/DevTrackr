@@ -26,7 +26,7 @@ public sealed class GetDashboardQueryHandlerTests
                 CreateDay(new DateOnly(2026, 6, 2), 45, 1, 4)
             ]);
 
-        repository.UserStatistics.ApplyGoalProgress(DateTime.UtcNow);
+        repository.UserStatistics.ApplyGoalCreated(DateTime.UtcNow);
         repository.UserStatistics.ApplyGoalCompleted(DateTime.UtcNow);
         repository.UserStatistics.ApplyStudySession(75, 4, new DateOnly(2026, 6, 2), 2, 3, DateTime.UtcNow);
 

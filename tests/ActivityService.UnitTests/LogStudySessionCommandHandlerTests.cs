@@ -54,6 +54,9 @@ public sealed class LogStudySessionCommandHandlerTests
         public Task<StudySession?> GetByIdAsync(Guid sessionId, Guid userId, CancellationToken cancellationToken = default) =>
             Task.FromResult(Items.FirstOrDefault(x => x.Id == sessionId && x.UserId == userId));
 
+        public Task<StudySession?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Items.FirstOrDefault(x => x.Id == id));
+
         public Task<IReadOnlyList<StudySession>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<StudySession>>(Items.Where(x => x.UserId == userId).ToArray());
 
@@ -62,6 +65,15 @@ public sealed class LogStudySessionCommandHandlerTests
 
         public Task<IReadOnlyList<StudySession>> GetByDateRangeAsync(Guid userId, DateOnly from, DateOnly to, CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<StudySession>>(Items.Where(x => x.UserId == userId && x.SessionDate >= from && x.SessionDate <= to).ToArray());
+
+        public void Update(StudySession studySession)
+        {
+        }
+
+        public void Remove(StudySession studySession)
+        {
+            Items.Remove(studySession);
+        }
     }
 
     private sealed class TestUnitOfWork : IUnitOfWork

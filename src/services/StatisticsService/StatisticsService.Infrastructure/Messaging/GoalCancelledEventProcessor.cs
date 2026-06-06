@@ -7,21 +7,21 @@ using StatisticsService.Infrastructure.Persistence.Repositories;
 
 namespace StatisticsService.Infrastructure.Messaging;
 
-public sealed class GoalProgressUpdatedEventProcessor(
+public sealed class GoalCancelledEventProcessor(
     IStatisticsProjectionRepository repository,
     IProcessedIntegrationEventRepository processedEvents,
     IStatisticsUnitOfWork unitOfWork,
     IDashboardCache cache,
-    ILogger<GoalProgressUpdatedEventProcessor> logger)
+    ILogger<GoalCancelledEventProcessor> logger)
 {
     public async Task ProcessAsync(
-        GoalProgressUpdatedIntegrationEvent integrationEvent,
+        GoalCancelledIntegrationEvent integrationEvent,
         CancellationToken cancellationToken)
     {
         if (await processedEvents.ExistsAsync(integrationEvent.EventId, cancellationToken))
         {
             logger.LogInformation(
-                "Goal progress event {EventId} already processed for UserId {UserId}",
+                "Goal cancelled event {EventId} already processed for UserId {UserId}",
                 integrationEvent.EventId,
                 integrationEvent.UserId);
             return;
@@ -29,16 +29,16 @@ public sealed class GoalProgressUpdatedEventProcessor(
 
         var userStatistics = await repository.GetOrCreateUserStatisticsAsync(
             integrationEvent.UserId,
-            integrationEvent.OccurredOnUtc,
+            integrationEvent.OccurredAt,
             cancellationToken);
 
-        userStatistics.ApplyGoalProgress(integrationEvent.OccurredOnUtc);
+        userStatistics.ApplyGoalCancelled(integrationEvent.OccurredAt);
 
         await processedEvents.AddAsync(
             new ProcessedIntegrationEvent
             {
                 EventId = integrationEvent.EventId,
-                EventType = nameof(GoalProgressUpdatedIntegrationEvent),
+                EventType = nameof(GoalCancelledIntegrationEvent),
                 ProcessedAtUtc = DateTime.UtcNow
             },
             cancellationToken);

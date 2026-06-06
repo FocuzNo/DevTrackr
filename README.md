@@ -501,8 +501,9 @@ They are updated only from integration events and are optimized for fast dashboa
    - `user_statistics`
    - `topic_statistics`
    - `daily_statistics`
-4. `StatisticsService` consumes goal progress and completion events as follow-up signals.
-5. Relevant events invalidate the Redis dashboard cache for the affected user.
+4. `StatisticsService` consumes goal progress and goal lifecycle events as follow-up signals.
+5. `activeGoals` is maintained through `GoalCreatedIntegrationEvent`, `GoalCancelledIntegrationEvent`, and `GoalCompletedIntegrationEvent`, not inferred from progress events.
+6. Relevant events invalidate the Redis dashboard cache for the affected user.
 
 ### Current user handling
 
