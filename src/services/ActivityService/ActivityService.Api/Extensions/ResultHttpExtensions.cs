@@ -1,3 +1,4 @@
+using DevTrackr.Observability.Http;
 using DevTrackr.SharedKernel.Primitives;
 
 namespace ActivityService.Api.Extensions;
@@ -24,21 +25,5 @@ public static class ResultHttpExtensions
         return MapFailure(result.Error);
     }
 
-    private static IResult MapFailure(Error error)
-    {
-        if (error.Code == "Validation")
-        {
-            return Results.ValidationProblem(new Dictionary<string, string[]>
-            {
-                ["request"] = [error.Message]
-            });
-        }
-
-        if (error.Code == "Activity.StudySessionNotFound")
-        {
-            return Results.NotFound(new { error.Code, error.Message });
-        }
-
-        return Results.BadRequest(new { error.Code, error.Message });
-    }
+    private static IResult MapFailure(Error error) => error.ToProblemResult();
 }

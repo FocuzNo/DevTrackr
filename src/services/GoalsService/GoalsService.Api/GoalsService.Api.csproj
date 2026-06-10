@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\building-blocks\DevTrackr.Cqrs\DevTrackr.Cqrs.csproj" />
+    <ProjectReference Include="..\..\..\building-blocks\DevTrackr.Observability\DevTrackr.Observability.csproj" />
     <ProjectReference Include="..\GoalsService.Application\GoalsService.Application.csproj" />
     <ProjectReference Include="..\GoalsService.Infrastructure\GoalsService.Infrastructure.csproj" />
   </ItemGroup>

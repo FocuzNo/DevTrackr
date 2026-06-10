@@ -69,6 +69,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DevTrackr.Cqrs", "src\build
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DevTrackr.Cqrs.UnitTests", "tests\DevTrackr.Cqrs.UnitTests\DevTrackr.Cqrs.UnitTests.csproj", "{F297AC40-B2C5-4EA6-9F77-07E3C0E41D3B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DevTrackr.Observability", "src\building-blocks\DevTrackr.Observability\DevTrackr.Observability.csproj", "{F3884968-1CB4-4292-8085-D1432EB5CFA6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -379,6 +381,18 @@ Global
 		{F297AC40-B2C5-4EA6-9F77-07E3C0E41D3B}.Release|x64.Build.0 = Release|Any CPU
 		{F297AC40-B2C5-4EA6-9F77-07E3C0E41D3B}.Release|x86.ActiveCfg = Release|Any CPU
 		{F297AC40-B2C5-4EA6-9F77-07E3C0E41D3B}.Release|x86.Build.0 = Release|Any CPU
+		{F3884968-1CB4-4292-8085-D1432EB5CFA6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3884968-1CB4-4292-8085-D1432EB5CFA6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3884968-1CB4-4292-8085-D1432EB5CFA6}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F3884968-1CB4-4292-8085-D1432EB5CFA6}.Debug|x64.Build.0 = Debug|Any CPU
+		{F3884968-1CB4-4292-8085-D1432EB5CFA6}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F3884968-1CB4-4292-8085-D1432EB5CFA6}.Debug|x86.Build.0 = Debug|Any CPU
+		{F3884968-1CB4-4292-8085-D1432EB5CFA6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3884968-1CB4-4292-8085-D1432EB5CFA6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F3884968-1CB4-4292-8085-D1432EB5CFA6}.Release|x64.ActiveCfg = Release|Any CPU
+		{F3884968-1CB4-4292-8085-D1432EB5CFA6}.Release|x64.Build.0 = Release|Any CPU
+		{F3884968-1CB4-4292-8085-D1432EB5CFA6}.Release|x86.ActiveCfg = Release|Any CPU
+		{F3884968-1CB4-4292-8085-D1432EB5CFA6}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -415,5 +429,6 @@ Global
 		{38D7531E-D99C-4F08-BFA3-A953CDEBEDCF} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{9F91C2AA-F930-45BA-96AC-26D4680BCFEA} = {C13E73B6-616D-3195-CD22-1E55A7D1F969}
 		{F297AC40-B2C5-4EA6-9F77-07E3C0E41D3B} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{F3884968-1CB4-4292-8085-D1432EB5CFA6} = {C13E73B6-616D-3195-CD22-1E55A7D1F969}
 	EndGlobalSection
 EndGlobal
