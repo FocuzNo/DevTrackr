@@ -69,7 +69,7 @@ services:
     container_name: devtrackr-identity-service
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ASPNETCORE_URLS: http://+:8080
+      ASPNETCORE_HTTP_PORTS: 8080
       ConnectionStrings__Database: Host=postgres;Port=5432;Database=devtrackr_identity;Username=postgres;Password=postgres
       RabbitMq__Host: rabbitmq
       RabbitMq__Username: guest
@@ -97,7 +97,7 @@ services:
     container_name: devtrackr-goals-service
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ASPNETCORE_URLS: http://+:8080
+      ASPNETCORE_HTTP_PORTS: 8080
       ConnectionStrings__Database: Host=postgres;Port=5432;Database=devtrackr_goals;Username=postgres;Password=postgres
       RabbitMq__Host: rabbitmq
       RabbitMq__Username: guest
@@ -124,7 +124,7 @@ services:
     container_name: devtrackr-activity-service
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ASPNETCORE_URLS: http://+:8080
+      ASPNETCORE_HTTP_PORTS: 8080
       ConnectionStrings__Database: Host=postgres;Port=5432;Database=devtrackr_activity;Username=postgres;Password=postgres
       RabbitMq__Host: rabbitmq
       RabbitMq__Username: guest
@@ -151,7 +151,7 @@ services:
     container_name: devtrackr-statistics-service
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ASPNETCORE_URLS: http://+:8080
+      ASPNETCORE_HTTP_PORTS: 8080
       ConnectionStrings__Database: Host=postgres;Port=5432;Database=devtrackr_statistics;Username=postgres;Password=postgres
       ConnectionStrings__Redis: redis:6379
       Redis__ConnectionString: redis:6379
