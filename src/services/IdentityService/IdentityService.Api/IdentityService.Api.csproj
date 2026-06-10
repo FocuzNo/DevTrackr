@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\building-blocks\DevTrackr.Observability\DevTrackr.Observability.csproj" />
     <ProjectReference Include="..\IdentityService.Application\IdentityService.Application.csproj" />
     <ProjectReference Include="..\IdentityService.Infrastructure\IdentityService.Infrastructure.csproj" />
   </ItemGroup>

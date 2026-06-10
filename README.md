@@ -9,6 +9,7 @@ DevTrackr is a small but professional .NET microservices backend for tracking a 
 - CQRS with a custom in-process mediator and FluentValidation pipeline
 - Event-driven communication with RabbitMQ and MassTransit
 - Transactional outbox preparation for event-producing services
+- Structured logs, centralized log collection, and OpenTelemetry traces
 - PostgreSQL database-per-service setup
 - Redis caching only for statistics/dashboard read models
 - Containerized local development with Docker Compose
@@ -75,6 +76,7 @@ Shared projects keep cross-service coupling disciplined:
 - `DevTrackr.Contracts`: immutable integration events
 - `DevTrackr.Messaging`: shared RabbitMQ and MassTransit bootstrap
 - `DevTrackr.Cqrs`: commands, queries, handlers, mediator, and validation pipeline
+- `DevTrackr.Observability`: Serilog, Seq, OpenTelemetry, and shared ProblemDetails handling
 
 ## Event-driven communication
 
@@ -107,6 +109,8 @@ RabbitMQ is the broker, MassTransit is the bus, the custom mediator is used only
 - Serilog
 - Health Checks
 - Docker Compose
+- Seq
+- OpenTelemetry
 
 ## What is implemented in this initial scaffold
 
@@ -163,6 +167,47 @@ Why this approach:
 - still gives us pipeline behaviors and FluentValidation
 
 MassTransit remains the cross-service messaging mechanism. The custom mediator is only for in-process request handling.
+
+## Observability
+
+All API services share the same observability setup through `DevTrackr.Observability`.
+
+### Included
+
+- Serilog structured logging
+- console logging for local development
+- Seq sink for centralized log search
+- OpenTelemetry tracing and metrics export over OTLP
+- shared global exception handling
+- RFC7807-style ProblemDetails responses with:
+  - `traceId`
+  - `errorCode`
+
+### Request flow
+
+`HTTP request -> Serilog request logging -> Endpoint -> Custom mediator / handler -> ProblemDetails on failure`
+
+### Seq
+
+- URL: [http://localhost:5341](http://localhost:5341)
+- container name: `devtrackr-seq`
+
+### OpenTelemetry
+
+- OTLP gRPC endpoint: `http://localhost:4317`
+- OTLP HTTP endpoint: `http://localhost:4318`
+- local collector container: `devtrackr-otel-collector`
+
+### Exception handling
+
+Unhandled exceptions are caught by a shared global exception handler.
+
+- validation exceptions become `400`
+- application/domain failures are mapped to ProblemDetails by the API result extensions
+- unexpected exceptions become `500`
+- in development, `detail` includes the exception message
+
+Every ProblemDetails response includes `traceId`, which matches the correlated request log entry.
 
 ## GoalsService
 
@@ -281,7 +326,7 @@ Start only the shared infrastructure:
 
 ```bash
 Copy-Item .env.example .env
-docker compose up -d postgres redis rabbitmq
+docker compose up -d postgres redis rabbitmq seq otel-collector
 ```
 
 Then run one or more API projects from Visual Studio or Rider:
@@ -334,6 +379,7 @@ This starts PostgreSQL, Redis, RabbitMQ, and all four API services in containers
 - RabbitMQ Management UI: [http://localhost:15672](http://localhost:15672)
   - username: `guest`
   - password: `guest`
+- Seq: [http://localhost:5341](http://localhost:5341)
 
 ## Running GoalsService only
 
@@ -357,7 +403,7 @@ From the repository root:
 ### Infrastructure only
 
 ```bash
-docker compose up -d postgres redis rabbitmq
+docker compose up -d postgres redis rabbitmq seq otel-collector
 ```
 
 ### Run one API service
@@ -409,6 +455,10 @@ docker compose logs --tail=150 goals-service-api
 
 - URL: [http://localhost:15672](http://localhost:15672)
 - Credentials: `guest` / `guest`
+
+### Seq
+
+- URL: [http://localhost:5341](http://localhost:5341)
 
 ### API documentation links
 
@@ -558,6 +608,13 @@ docker compose up
 
 ```powershell
 docker compose --progress=plain build --no-cache goals-service-api
+```
+
+- If centralized logs or traces are missing, check the observability containers directly:
+
+```powershell
+docker compose ps
+docker compose logs --tail=150 seq otel-collector
 ```
 
 - If Docker still behaves oddly, restart Docker Desktop and run:

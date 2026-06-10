@@ -42,6 +42,26 @@ services:
       timeout: 10s
       retries: 10
 
+  seq:
+    image: datalust/seq:latest
+    container_name: devtrackr-seq
+    environment:
+      ACCEPT_EULA: "Y"
+      SEQ_FIRSTRUN_NOAUTHENTICATION: "True"
+    ports:
+      - "5341:80"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: devtrackr-otel-collector
+    command:
+      - "--config=/etc/otelcol-contrib/config.yaml"
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ./otel-collector-config.yml:/etc/otelcol-contrib/config.yaml:ro
+
   identity-service-api:
     build:
       context: .
@@ -54,6 +74,9 @@ services:
       RabbitMq__Host: rabbitmq
       RabbitMq__Username: guest
       RabbitMq__Password: guest
+      Seq__ServerUrl: http://seq
+      OpenTelemetry__ServiceName: IdentityService
+      OpenTelemetry__OtlpEndpoint: http://otel-collector:4317
       Jwt__Issuer: DevTrackr
       Jwt__Audience: DevTrackr
       Jwt__Secret: devtrackr-local-development-secret-key-change-me
@@ -79,6 +102,9 @@ services:
       RabbitMq__Host: rabbitmq
       RabbitMq__Username: guest
       RabbitMq__Password: guest
+      Seq__ServerUrl: http://seq
+      OpenTelemetry__ServiceName: GoalsService
+      OpenTelemetry__OtlpEndpoint: http://otel-collector:4317
       Jwt__Issuer: DevTrackr
       Jwt__Audience: DevTrackr
       Jwt__Secret: devtrackr-local-development-secret-key-change-me
@@ -103,6 +129,9 @@ services:
       RabbitMq__Host: rabbitmq
       RabbitMq__Username: guest
       RabbitMq__Password: guest
+      Seq__ServerUrl: http://seq
+      OpenTelemetry__ServiceName: ActivityService
+      OpenTelemetry__OtlpEndpoint: http://otel-collector:4317
       Jwt__Issuer: DevTrackr
       Jwt__Audience: DevTrackr
       Jwt__Secret: devtrackr-local-development-secret-key-change-me
@@ -129,6 +158,9 @@ services:
       RabbitMq__Host: rabbitmq
       RabbitMq__Username: guest
       RabbitMq__Password: guest
+      Seq__ServerUrl: http://seq
+      OpenTelemetry__ServiceName: StatisticsService
+      OpenTelemetry__OtlpEndpoint: http://otel-collector:4317
       Jwt__Issuer: DevTrackr
       Jwt__Audience: DevTrackr
       Jwt__Secret: devtrackr-local-development-secret-key-change-me

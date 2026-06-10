@@ -1,22 +1,18 @@
 using IdentityService.Application;
 using IdentityService.Application.Auth;
+using DevTrackr.Observability.Extensions;
 using Scalar.AspNetCore;
-using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Host.UseSerilog((context, services, configuration) =>
-    configuration
-        .ReadFrom.Configuration(context.Configuration)
-        .ReadFrom.Services(services)
-        .WriteTo.Console());
-
+builder.AddDevTrackrObservability("IdentityService");
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
 builder.Services.AddApplication();
 
 var app = builder.Build();
 
+app.UseDevTrackrObservability("IdentityService");
 app.MapOpenApi();
 app.MapScalarApiReference("/scalar/v1", options => options.WithTitle("IdentityService API"));
 app.MapHealthChecks("/health");
@@ -26,6 +22,13 @@ app.MapGet("/api/system/ping", () => Results.Ok(new
     Status = "Running",
     UtcNow = DateTime.UtcNow
 }));
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapGet(
+        "/api/system/error",
+        (HttpContext _) => throw new InvalidOperationException("Development exception test for IdentityService."));
+}
 
 var api = app.MapGroup("/api/identity").WithTags("Identity");
 

@@ -7,6 +7,7 @@ COPY Directory.Build.props ./
 
 COPY src/building-blocks/DevTrackr.SharedKernel/DevTrackr.SharedKernel.csproj src/building-blocks/DevTrackr.SharedKernel/
 COPY src/building-blocks/DevTrackr.Cqrs/DevTrackr.Cqrs.csproj src/building-blocks/DevTrackr.Cqrs/
+COPY src/building-blocks/DevTrackr.Observability/DevTrackr.Observability.csproj src/building-blocks/DevTrackr.Observability/
 COPY src/building-blocks/DevTrackr.Contracts/DevTrackr.Contracts.csproj src/building-blocks/DevTrackr.Contracts/
 COPY src/building-blocks/DevTrackr.Messaging/DevTrackr.Messaging.csproj src/building-blocks/DevTrackr.Messaging/
 
