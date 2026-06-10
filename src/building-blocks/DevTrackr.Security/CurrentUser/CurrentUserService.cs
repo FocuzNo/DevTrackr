@@ -1,14 +1,10 @@
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
 using System.Security.Claims;
 
 namespace DevTrackr.Security.CurrentUser;
 
 public sealed class CurrentUserService(
-    IHttpContextAccessor httpContextAccessor,
-    IHostEnvironment environment,
-    IOptions<CurrentUserOptions> options) : ICurrentUserService
+    IHttpContextAccessor httpContextAccessor) : ICurrentUserService
 {
     public Guid? UserId => ResolveUserId();
 
@@ -17,8 +13,7 @@ public sealed class CurrentUserService(
         ?? httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.Email);
 
     public bool IsAuthenticated =>
-        httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated == true
-        || ResolveDevelopmentUserId() is not null;
+        httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated == true;
 
     public Guid GetRequiredUserId() =>
         UserId ?? throw new InvalidOperationException("Current user id is not available.");
@@ -39,11 +34,6 @@ public sealed class CurrentUserService(
             }
         }
 
-        return ResolveDevelopmentUserId();
+        return null;
     }
-
-    private Guid? ResolveDevelopmentUserId() =>
-        environment.IsDevelopment()
-            ? options.Value.DevelopmentUserId
-            : null;
 }

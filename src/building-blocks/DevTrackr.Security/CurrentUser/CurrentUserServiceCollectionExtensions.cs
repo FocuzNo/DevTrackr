@@ -1,15 +1,11 @@
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DevTrackr.Security.CurrentUser;
 
 public static class CurrentUserServiceCollectionExtensions
 {
-    public static IServiceCollection AddCurrentUser(
-        this IServiceCollection services,
-        IConfiguration configuration)
+    public static IServiceCollection AddCurrentUser(this IServiceCollection services)
     {
-        services.Configure<CurrentUserOptions>(configuration.GetSection(CurrentUserOptions.SectionName));
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         return services;

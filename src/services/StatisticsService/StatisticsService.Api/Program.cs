@@ -2,6 +2,7 @@ using FastEndpoints;
 using DevTrackr.Observability.Extensions;
 using DevTrackr.Security.Authentication;
 using DevTrackr.Security.CurrentUser;
+using DevTrackr.Security.OpenApi;
 using Scalar.AspNetCore;
 using StatisticsService.Api.Extensions;
 using StatisticsService.Application;
@@ -11,12 +12,12 @@ using StatisticsService.Infrastructure.Persistence;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddDevTrackrObservability("StatisticsService");
-builder.Services.AddOpenApi();
+builder.Services.AddDevTrackrOpenApi();
 builder.Services.AddFastEndpoints();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddJwtAuthentication(builder.Configuration);
-builder.Services.AddCurrentUser(builder.Configuration);
+builder.Services.AddCurrentUser();
 
 var app = builder.Build();
 
@@ -29,7 +30,11 @@ app.UseDevTrackrObservability("StatisticsService");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapOpenApi();
-app.MapScalarApiReference("/scalar/v1", options => options.WithTitle("StatisticsService API"));
+app.MapScalarApiReference(
+    "/scalar/v1",
+    options => options
+        .WithTitle("StatisticsService API")
+        .AddPreferredSecuritySchemes("Bearer"));
 app.MapHealthChecks("/health");
 app.MapGet("/api/system/ping", () => Results.Ok(new
 {

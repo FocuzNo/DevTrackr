@@ -256,10 +256,7 @@ GoalsService now uses FastEndpoints for its HTTP surface and the shared custom m
 
 ### Current user handling
 
-GoalsService reads the current user id from JWT claims when available. During local development, it also supports a development-only fallback user id through configuration:
-
-- `CurrentUser:DevelopmentUserId`
-- `GOALS_DEVELOPMENT_USER_ID` in Docker Compose
+GoalsService reads the current user id only from JWT claims through the shared `CurrentUserService`.
 
 ## IdentityService
 
@@ -295,7 +292,7 @@ It uses FastEndpoints for its HTTP surface, the shared custom mediator for CQRS 
    - `sub` as the user id
    - `email` as the current email
    - authentication state from `HttpContext.User`
-5. `GoalsService`, `ActivityService`, and `StatisticsService` use that user id instead of guessing it from local fallback settings.
+5. `GoalsService`, `ActivityService`, and `StatisticsService` use that user id directly from JWT claims.
 
 ### IdentityService request flow
 
@@ -310,7 +307,7 @@ All API services share the same local JWT configuration:
 - `Jwt:Secret = devtrackr-local-development-secret-key-change-me`
 - `Jwt:ExpirationMinutes = 60`
 
-The development current-user fallback remains available only in `Development` and is used only when no authenticated JWT user is present.
+Business endpoints require authentication. There is no fake development user fallback for protected HTTP requests.
 
 ## ActivityService
 
@@ -353,10 +350,7 @@ ActivityService uses FastEndpoints for its HTTP surface and the shared custom me
 
 ### Current user handling
 
-ActivityService reads the current user id from JWT claims when available. During local development, it supports the same development-only fallback user id pattern as GoalsService:
-
-- `CurrentUser:DevelopmentUserId`
-- `CurrentUser__DevelopmentUserId` in Docker Compose
+ActivityService reads the current user id only from JWT claims through the shared `CurrentUserService`.
 
 ## How to run locally
 
@@ -449,6 +443,19 @@ Use the returned token with protected APIs:
 ```bash
 curl http://localhost:5102/api/goals ^
   -H "Authorization: Bearer <access-token>"
+```
+
+Use the same token in Scalar:
+
+1. Open any Scalar page.
+2. Click the authentication control.
+3. Select the `Bearer` scheme.
+4. Paste the access token.
+
+Scalar will send:
+
+```text
+Authorization: Bearer <access-token>
 ```
 
 ### Infrastructure
@@ -634,10 +641,7 @@ They are updated only from integration events and are optimized for fast dashboa
 
 ### Current user handling
 
-StatisticsService reads the current user id from JWT claims when available. During local development, it supports the same development-only fallback user id pattern as the other implemented services:
-
-- `CurrentUser:DevelopmentUserId`
-- `CurrentUser__DevelopmentUserId` in Docker Compose
+StatisticsService reads the current user id only from JWT claims through the shared `CurrentUserService`.
 
 ## StatisticsService migrations
 

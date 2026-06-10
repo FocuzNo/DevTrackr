@@ -1,6 +1,7 @@
 using DevTrackr.Observability.Extensions;
 using DevTrackr.Security.Authentication;
 using DevTrackr.Security.CurrentUser;
+using DevTrackr.Security.OpenApi;
 using FastEndpoints;
 using GoalsService.Api.Extensions;
 using GoalsService.Application;
@@ -12,14 +13,14 @@ using System.Text.Json.Serialization;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddDevTrackrObservability("GoalsService");
-builder.Services.AddOpenApi();
+builder.Services.AddDevTrackrOpenApi();
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddFastEndpoints();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddJwtAuthentication(builder.Configuration);
-builder.Services.AddCurrentUser(builder.Configuration);
+builder.Services.AddCurrentUser();
 
 var app = builder.Build();
 
@@ -32,7 +33,11 @@ app.UseDevTrackrObservability("GoalsService");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapOpenApi();
-app.MapScalarApiReference("/scalar/v1", options => options.WithTitle("GoalsService API"));
+app.MapScalarApiReference(
+    "/scalar/v1",
+    options => options
+        .WithTitle("GoalsService API")
+        .AddPreferredSecuritySchemes("Bearer"));
 app.MapHealthChecks("/health");
 app.MapGet("/api/system/ping", () => Results.Ok(new
 {
