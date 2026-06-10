@@ -76,6 +76,7 @@ Shared projects keep cross-service coupling disciplined:
 - `DevTrackr.Contracts`: immutable integration events
 - `DevTrackr.Messaging`: shared RabbitMQ and MassTransit bootstrap
 - `DevTrackr.Cqrs`: commands, queries, handlers, mediator, and validation pipeline
+- `DevTrackr.Security`: shared JWT authentication and current-user access
 - `DevTrackr.Observability`: Serilog, Seq, OpenTelemetry, and shared ProblemDetails handling
 
 ## Event-driven communication
@@ -260,6 +261,57 @@ GoalsService reads the current user id from JWT claims when available. During lo
 - `CurrentUser:DevelopmentUserId`
 - `GOALS_DEVELOPMENT_USER_ID` in Docker Compose
 
+## IdentityService
+
+`IdentityService` is now implemented as the authentication entry point for the platform.
+
+It uses FastEndpoints for its HTTP surface, the shared custom mediator for CQRS flow, PostgreSQL for user persistence, and JWT bearer tokens for authentication across all API services.
+
+### Endpoints
+
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET /api/users/me`
+- `GET /health`
+- `GET /scalar/v1`
+- `GET /api/system/ping`
+
+### IdentityService domain rules
+
+- email is required
+- email is normalized
+- display name is required
+- display name max length is 100 characters
+- password hash is required
+- user email is unique at the database level
+
+### JWT authentication flow
+
+1. Call `POST /api/auth/register` to create a user and receive an access token.
+2. Or call `POST /api/auth/login` with existing credentials to receive an access token.
+3. Send the token to protected APIs with:
+   - `Authorization: Bearer <access-token>`
+4. The shared `CurrentUserService` reads:
+   - `sub` as the user id
+   - `email` as the current email
+   - authentication state from `HttpContext.User`
+5. `GoalsService`, `ActivityService`, and `StatisticsService` use that user id instead of guessing it from local fallback settings.
+
+### IdentityService request flow
+
+`FastEndpoints -> IAppMediator -> ValidationBehavior -> Command/Query Handler -> Domain + Infrastructure`
+
+### Local development JWT settings
+
+All API services share the same local JWT configuration:
+
+- `Jwt:Issuer = DevTrackr`
+- `Jwt:Audience = DevTrackr`
+- `Jwt:Secret = devtrackr-local-development-secret-key-change-me`
+- `Jwt:ExpirationMinutes = 60`
+
+The development current-user fallback remains available only in `Development` and is used only when no authenticated JWT user is present.
+
 ## ActivityService
 
 `ActivityService` is the second fully implemented microservice in the solution.
@@ -374,6 +426,31 @@ This starts PostgreSQL, Redis, RabbitMQ, and all four API services in containers
 - ActivityService Scalar: [http://localhost:5103/scalar/v1](http://localhost:5103/scalar/v1)
 - StatisticsService Scalar: [http://localhost:5104/scalar/v1](http://localhost:5104/scalar/v1)
 
+### Authentication quick start
+
+Register a user:
+
+```bash
+curl -X POST http://localhost:5101/api/auth/register ^
+  -H "Content-Type: application/json" ^
+  -d "{\"email\":\"alex@example.com\",\"password\":\"DevTrackr123!\",\"displayName\":\"Alex\"}"
+```
+
+Login:
+
+```bash
+curl -X POST http://localhost:5101/api/auth/login ^
+  -H "Content-Type: application/json" ^
+  -d "{\"email\":\"alex@example.com\",\"password\":\"DevTrackr123!\"}"
+```
+
+Use the returned token with protected APIs:
+
+```bash
+curl http://localhost:5102/api/goals ^
+  -H "Authorization: Bearer <access-token>"
+```
+
 ### Infrastructure
 
 - RabbitMQ Management UI: [http://localhost:15672](http://localhost:15672)
@@ -425,7 +502,7 @@ You can replace `goals-service-api` with:
 docker compose up --build
 ```
 
-At this stage, `GoalsService`, `ActivityService`, and `StatisticsService` are fully wired microservices. `IdentityService` is still a startup-ready API stub so the full solution can boot cleanly in Docker while its business and infrastructure logic is still being built out.
+At this stage, all four services boot together in Docker Compose. `IdentityService` now provides registration, login, and JWT issuance for the other protected APIs.
 
 ### Stop services
 
@@ -578,6 +655,22 @@ Create a new StatisticsService migration later with:
 dotnet ef migrations add InitialCreate --project src/services/StatisticsService/StatisticsService.Infrastructure --startup-project src/services/StatisticsService/StatisticsService.Api
 ```
 
+## IdentityService migrations
+
+In local and Docker development environments, IdentityService applies EF Core migrations automatically on startup. You can also manage the schema manually when needed.
+
+Apply the IdentityService database migration manually with:
+
+```bash
+dotnet ef database update --project src/services/IdentityService/IdentityService.Infrastructure --startup-project src/services/IdentityService/IdentityService.Api
+```
+
+Create a new IdentityService migration later with:
+
+```bash
+dotnet ef migrations add InitialCreate --project src/services/IdentityService/IdentityService.Infrastructure --startup-project src/services/IdentityService/IdentityService.Api
+```
+
 ## Database setup notes
 
 Docker Compose runs a single PostgreSQL container. The application does not use SQL init scripts for schema creation.
@@ -625,21 +718,22 @@ wsl --shutdown
 
 ## Next implementation steps
 
-1. Implement `IdentityService` registration/login and real JWT issuance.
-2. Add integration tests around cross-service event processing and Redis cache invalidation.
-3. Add authentication/authorization coverage across the APIs instead of relying on development user fallbacks.
-4. Expand CI verification for migrations, Docker startup, and cross-service event flow.
-5. Add observability around consumer lag, projection failures, and cache hit rate.
+1. Add integration tests around register/login and authenticated cross-service flows.
+2. Reduce the remaining development-only current-user fallback where it is no longer needed.
+3. Expand CI verification for migrations, Docker startup, and cross-service event flow.
+4. Add observability around consumer lag, projection failures, and cache hit rate.
+5. Start implementing finer-grained authorization once the core auth flow is stable.
 
 ## Roadmap
 
 - [x] EF Core migrations per service
-- [ ] Real registration/login flow
+- [x] Real registration/login flow
 - [ ] Goal lifecycle and progress updates
 - [x] Study session persistence and outbox publishing
 - [x] Statistics projections and dashboard endpoints
 - [x] Cache invalidation and dashboard optimization
-- [ ] Better authentication/authorization coverage
+- [x] JWT authentication across business APIs
+- [ ] Better authorization coverage
 - [ ] CI pipeline
 - [ ] Observability improvements
 
@@ -682,6 +776,32 @@ docker compose up --build
 
 ```bash
 docker compose logs --tail=150 activity-service-api goals-service-api
+```
+
+## End-to-end check: Authenticated flow
+
+Once Docker is running, you can verify the JWT path with this sequence:
+
+1. Register a user in IdentityService:
+   - [http://localhost:5101/scalar/v1](http://localhost:5101/scalar/v1)
+   - `POST /api/auth/register`
+
+2. Copy the returned `accessToken`.
+
+3. Use that token against:
+   - `POST /api/goals`
+   - `POST /api/study-sessions`
+   - `GET /api/statistics/dashboard`
+
+4. Verify the same user id flows through the services:
+   - `GET /api/users/me`
+   - `GET /api/goals`
+   - `GET /api/statistics/dashboard`
+
+5. If you want to inspect the container-side flow:
+
+```bash
+docker compose logs --tail=150 identity-service-api goals-service-api activity-service-api statistics-service-api
 ```
 
 ## End-to-end check: Dashboard

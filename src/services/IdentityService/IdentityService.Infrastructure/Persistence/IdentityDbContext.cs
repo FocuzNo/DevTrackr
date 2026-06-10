@@ -9,12 +9,7 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<User>(builder =>
-        {
-            builder.HasKey(x => x.Id);
-            builder.Property(x => x.Email).HasMaxLength(200);
-            builder.Property(x => x.DisplayName).HasMaxLength(100);
-            builder.Property(x => x.PasswordHash).HasMaxLength(500);
-        });
+        base.OnModelCreating(modelBuilder);
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(IdentityDbContext).Assembly);
     }
 }
