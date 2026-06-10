@@ -1,6 +1,7 @@
-using FastEndpoints;
 using DevTrackr.Observability.Extensions;
-using GoalsService.Api.Auth;
+using DevTrackr.Security.Authentication;
+using DevTrackr.Security.CurrentUser;
+using FastEndpoints;
 using GoalsService.Api.Extensions;
 using GoalsService.Application;
 using GoalsService.Infrastructure;
@@ -17,9 +18,8 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 builder.Services.AddFastEndpoints();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.Configure<CurrentUserOptions>(builder.Configuration.GetSection(CurrentUserOptions.SectionName));
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<ICurrentUserProvider, CurrentUserProvider>();
+builder.Services.AddJwtAuthentication(builder.Configuration);
+builder.Services.AddCurrentUser(builder.Configuration);
 
 var app = builder.Build();
 
@@ -29,6 +29,8 @@ if (app.Environment.ShouldApplyMigrations())
 }
 
 app.UseDevTrackrObservability("GoalsService");
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapOpenApi();
 app.MapScalarApiReference("/scalar/v1", options => options.WithTitle("GoalsService API"));
 app.MapHealthChecks("/health");

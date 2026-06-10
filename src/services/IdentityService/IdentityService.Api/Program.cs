@@ -1,6 +1,11 @@
-using IdentityService.Application;
-using IdentityService.Application.Auth;
 using DevTrackr.Observability.Extensions;
+using DevTrackr.Security.Authentication;
+using DevTrackr.Security.CurrentUser;
+using FastEndpoints;
+using IdentityService.Api.Extensions;
+using IdentityService.Application;
+using IdentityService.Infrastructure;
+using IdentityService.Infrastructure.Persistence;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,11 +13,22 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddDevTrackrObservability("IdentityService");
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
+builder.Services.AddFastEndpoints();
 builder.Services.AddApplication();
+builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddJwtAuthentication(builder.Configuration);
+builder.Services.AddCurrentUser(builder.Configuration);
 
 var app = builder.Build();
 
+if (app.Environment.ShouldApplyMigrations())
+{
+    await app.ApplyMigrationsAsync<IdentityDbContext>();
+}
+
 app.UseDevTrackrObservability("IdentityService");
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapOpenApi();
 app.MapScalarApiReference("/scalar/v1", options => options.WithTitle("IdentityService API"));
 app.MapHealthChecks("/health");
@@ -30,37 +46,6 @@ if (app.Environment.IsDevelopment())
         (HttpContext _) => throw new InvalidOperationException("Development exception test for IdentityService."));
 }
 
-var api = app.MapGroup("/api/identity").WithTags("Identity");
-
-api.MapGet("/test", () => Results.Ok(new
-{
-    Service = "IdentityService",
-    Status = "Running",
-    UtcNow = DateTime.UtcNow
-}));
-
-api.MapPost("/register", (RegisterRequest request) =>
-    Results.Accepted(value: new
-    {
-        Message = "Registration endpoint scaffolded.",
-        request.Email,
-        request.DisplayName
-    }));
-
-api.MapPost("/login", (LoginRequest request) =>
-    Results.Ok(new
-    {
-        Message = "Login endpoint scaffolded.",
-        Token = "placeholder-jwt-token",
-        request.Email
-    }));
-
-api.MapGet("/me", () =>
-    Results.Ok(new
-    {
-        UserId = Guid.Empty,
-        Email = "current-user@devtrackr.local",
-        DisplayName = "Current User"
-    }));
+app.UseFastEndpoints();
 
 app.Run();

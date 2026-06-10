@@ -15,4 +15,10 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\services\IdentityService\IdentityService.Application\IdentityService.Application.csproj" />
+    <ProjectReference Include="..\..\src\services\IdentityService\IdentityService.Domain\IdentityService.Domain.csproj" />
+    <ProjectReference Include="..\..\src\services\IdentityService\IdentityService.Infrastructure\IdentityService.Infrastructure.csproj" />
+  </ItemGroup>
+
 </Project>

@@ -1,9 +1,10 @@
-using ActivityService.Api.Auth;
 using ActivityService.Api.Extensions;
 using ActivityService.Application;
 using ActivityService.Infrastructure;
 using ActivityService.Infrastructure.Persistence;
 using DevTrackr.Observability.Extensions;
+using DevTrackr.Security.Authentication;
+using DevTrackr.Security.CurrentUser;
 using FastEndpoints;
 using Scalar.AspNetCore;
 using System.Text.Json.Serialization;
@@ -17,9 +18,8 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 builder.Services.AddFastEndpoints();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.Configure<CurrentUserOptions>(builder.Configuration.GetSection(CurrentUserOptions.SectionName));
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<ICurrentUserProvider, CurrentUserProvider>();
+builder.Services.AddJwtAuthentication(builder.Configuration);
+builder.Services.AddCurrentUser(builder.Configuration);
 
 var app = builder.Build();
 
@@ -29,6 +29,8 @@ if (app.Environment.ShouldApplyMigrations())
 }
 
 app.UseDevTrackrObservability("ActivityService");
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapOpenApi();
 app.MapScalarApiReference("/scalar/v1", options => options.WithTitle("ActivityService API"));
 app.MapHealthChecks("/health");

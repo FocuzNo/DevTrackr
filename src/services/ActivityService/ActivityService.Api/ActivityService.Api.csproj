@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\building-blocks\DevTrackr.Cqrs\DevTrackr.Cqrs.csproj" />
+    <ProjectReference Include="..\..\..\building-blocks\DevTrackr.Security\DevTrackr.Security.csproj" />
     <ProjectReference Include="..\..\..\building-blocks\DevTrackr.Observability\DevTrackr.Observability.csproj" />
     <ProjectReference Include="..\ActivityService.Application\ActivityService.Application.csproj" />
     <ProjectReference Include="..\ActivityService.Infrastructure\ActivityService.Infrastructure.csproj" />

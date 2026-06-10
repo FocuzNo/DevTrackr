@@ -1,6 +1,7 @@
 using DevTrackr.Cqrs.Abstractions;
+using DevTrackr.Security.Authentication;
+using DevTrackr.Security.CurrentUser;
 using FastEndpoints;
-using GoalsService.Api.Auth;
 using GoalsService.Api.Extensions;
 using GoalsService.Application.Goals.Commands;
 using GoalsService.Application.Goals.Queries;
@@ -8,20 +9,20 @@ using GoalsService.Application.Goals.Requests;
 
 namespace GoalsService.Api.Endpoints;
 
-public sealed class CreateGoalEndpoint(IAppMediator mediator, ICurrentUserProvider currentUserProvider)
+public sealed class CreateGoalEndpoint(IAppMediator mediator, ICurrentUserService currentUserService)
     : Endpoint<CreateGoalRequest>
 {
     public override void Configure()
     {
         Post("/api/goals");
-        AllowAnonymous();
+        Policies(SecurityPolicies.Authenticated);
         Summary(s => s.Summary = "Create a new learning goal.");
     }
 
     public override async Task HandleAsync(CreateGoalRequest request, CancellationToken cancellationToken)
     {
         var command = new CreateGoalCommand(
-            currentUserProvider.GetRequiredUserId(),
+            currentUserService.GetRequiredUserId(),
             request.Title,
             request.Description,
             request.Category,
@@ -34,53 +35,53 @@ public sealed class CreateGoalEndpoint(IAppMediator mediator, ICurrentUserProvid
     }
 }
 
-public sealed class GetGoalsEndpoint(IAppMediator mediator, ICurrentUserProvider currentUserProvider)
+public sealed class GetGoalsEndpoint(IAppMediator mediator, ICurrentUserService currentUserService)
     : EndpointWithoutRequest
 {
     public override void Configure()
     {
         Get("/api/goals");
-        AllowAnonymous();
+        Policies(SecurityPolicies.Authenticated);
         Summary(s => s.Summary = "Get all goals for the current user.");
     }
 
     public override async Task HandleAsync(CancellationToken cancellationToken)
     {
         var result = await mediator.SendAsync(
-            new GetGoalsQuery(currentUserProvider.GetRequiredUserId()),
+            new GetGoalsQuery(currentUserService.GetRequiredUserId()),
             cancellationToken);
 
         await result.ToApiResult().ExecuteAsync(HttpContext);
     }
 }
 
-public sealed class GetGoalByIdEndpoint(IAppMediator mediator, ICurrentUserProvider currentUserProvider)
+public sealed class GetGoalByIdEndpoint(IAppMediator mediator, ICurrentUserService currentUserService)
     : EndpointWithoutRequest
 {
     public override void Configure()
     {
         Get("/api/goals/{id:guid}");
-        AllowAnonymous();
+        Policies(SecurityPolicies.Authenticated);
         Summary(s => s.Summary = "Get a goal by id.");
     }
 
     public override async Task HandleAsync(CancellationToken cancellationToken)
     {
         var result = await mediator.SendAsync(
-            new GetGoalByIdQuery(currentUserProvider.GetRequiredUserId(), Route<Guid>("id")),
+            new GetGoalByIdQuery(currentUserService.GetRequiredUserId(), Route<Guid>("id")),
             cancellationToken);
 
         await result.ToApiResult().ExecuteAsync(HttpContext);
     }
 }
 
-public sealed class UpdateGoalEndpoint(IAppMediator mediator, ICurrentUserProvider currentUserProvider)
+public sealed class UpdateGoalEndpoint(IAppMediator mediator, ICurrentUserService currentUserService)
     : Endpoint<UpdateGoalRequest>
 {
     public override void Configure()
     {
         Put("/api/goals/{id:guid}");
-        AllowAnonymous();
+        Policies(SecurityPolicies.Authenticated);
         Summary(s => s.Summary = "Update goal details.");
     }
 
@@ -88,7 +89,7 @@ public sealed class UpdateGoalEndpoint(IAppMediator mediator, ICurrentUserProvid
     {
         var result = await mediator.SendAsync(
             new UpdateGoalCommand(
-                currentUserProvider.GetRequiredUserId(),
+                currentUserService.GetRequiredUserId(),
                 Route<Guid>("id"),
                 request.Title,
                 request.Description,
@@ -102,40 +103,40 @@ public sealed class UpdateGoalEndpoint(IAppMediator mediator, ICurrentUserProvid
     }
 }
 
-public sealed class CompleteGoalEndpoint(IAppMediator mediator, ICurrentUserProvider currentUserProvider)
+public sealed class CompleteGoalEndpoint(IAppMediator mediator, ICurrentUserService currentUserService)
     : EndpointWithoutRequest
 {
     public override void Configure()
     {
         Post("/api/goals/{id:guid}/complete");
-        AllowAnonymous();
+        Policies(SecurityPolicies.Authenticated);
         Summary(s => s.Summary = "Complete a goal.");
     }
 
     public override async Task HandleAsync(CancellationToken cancellationToken)
     {
         var result = await mediator.SendAsync(
-            new CompleteGoalCommand(currentUserProvider.GetRequiredUserId(), Route<Guid>("id")),
+            new CompleteGoalCommand(currentUserService.GetRequiredUserId(), Route<Guid>("id")),
             cancellationToken);
 
         await result.ToApiResult().ExecuteAsync(HttpContext);
     }
 }
 
-public sealed class CancelGoalEndpoint(IAppMediator mediator, ICurrentUserProvider currentUserProvider)
+public sealed class CancelGoalEndpoint(IAppMediator mediator, ICurrentUserService currentUserService)
     : EndpointWithoutRequest
 {
     public override void Configure()
     {
         Post("/api/goals/{id:guid}/cancel");
-        AllowAnonymous();
+        Policies(SecurityPolicies.Authenticated);
         Summary(s => s.Summary = "Cancel a goal.");
     }
 
     public override async Task HandleAsync(CancellationToken cancellationToken)
     {
         var result = await mediator.SendAsync(
-            new CancelGoalCommand(currentUserProvider.GetRequiredUserId(), Route<Guid>("id")),
+            new CancelGoalCommand(currentUserService.GetRequiredUserId(), Route<Guid>("id")),
             cancellationToken);
 
         await result.ToApiResult().ExecuteAsync(HttpContext);
